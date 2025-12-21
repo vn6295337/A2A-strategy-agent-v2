@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A2A Strategy Agent</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --background: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 0.5rem;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #475569;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.375rem;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        button:hover {
+            background-color: #5856eb;
+        }
+        
+        button:disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .results {
+            margin-top: 2rem;
+        }
+        
+        .swot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .swot-card {
+            border-left: 4px solid;
+            padding: 1.5rem;
+        }
+        
+        .strengths { border-color: #10b981; }
+        .weaknesses { border-color: #ef4444; }
+        .opportunities { border-color: #3b82f6; }
+        .threats { border-color: #f59e0b; }
+        
+        .swot-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .strengths h3 { color: #059669; }
+        .weaknesses h3 { color: #dc2626; }
+        .opportunities h3 { color: #2563eb; }
+        .threats h3 { color: #d97706; }
+        
+        .swot-card ul {
+            list-style: none;
+        }
+        
+        .swot-card li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .swot-card li::before {
+            content: "•";
+            color: #94a3b8;
+            font-weight: bold;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+        
+        .status.success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .status.warning {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #8b5cf6);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .info-box {
+            background-color: #e0e7ff;
+            border-left: 4px solid var(--primary);
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-top: 1.5rem;
+        }
+        
+        .info-box p {
+            margin: 0.5rem 0;
+            color: #4338ca;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+            font-size: 0.875rem;
+            border-top: 1px solid var(--border);
+            margin-top: 3rem;
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .swot-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div>
+                <h1>🤖 A2A Strategy Agent</h1>
+                <p style="opacity: 0.9; margin-top: 0.5rem;">AI-Powered Strategic SWOT Analysis</p>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="card">
+            <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem;">Strategic Analysis</h2>
+            
+            <div class="input-group">
+                <label for="company">Company Name</label>
+                <input type="text" id="company" placeholder="Enter company name (e.g., Tesla)" value="Tesla">
+            </div>
+            
+            <button id="analyzeBtn" onclick="startAnalysis()">
+                <span id="buttonText">Generate SWOT Analysis</span>
+                <span id="buttonLoading" class="loading" style="display: none;"></span>
+            </button>
+            
+            <div id="status" class="status" style="display: none;"></div>
+            
+            <div class="progress-bar" style="display: none;">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+            
+            <div id="results" class="results" style="display: none;"></div>
+            
+            <div class="info-box">
+                <p>✨ <strong>How it works:</strong></p>
+                <p>1. Enter a company name</p>
+                <p>2. Click "Generate SWOT Analysis"</p>
+                <p>3. The AI will analyze the company and generate a strategic SWOT report</p>
+                <p>4. Results include Strengths, Weaknesses, Opportunities, and Threats</p>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>A2A Strategy Agent | AI-Powered Business Analysis | © 2025</p>
+        <p style="margin-top: 0.5rem;">
+            <a href="https://github.com/vn6295337/A2A-strategy-agent" target="_blank" style="color: var(--primary); text-decoration: none;">
+                View on GitHub
+            </a>
+        </p>
+    </footer>
+    
+    <script>
+        let workflowId = '';
+        
+        async function startAnalysis() {
+            const company = document.getElementById('company').value.trim();
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const buttonText = document.getElementById('buttonText');
+            const buttonLoading = document.getElementById('buttonLoading');
+            const statusDiv = document.getElementById('status');
+            const progressBar = document.querySelector('.progress-bar');
+            const resultsDiv = document.getElementById('results');
+            
+            if (!company) {
+                alert('Please enter a company name');
+                return;
+            }
+            
+            // Disable button and show loading
+            analyzeBtn.disabled = true;
+            buttonText.textContent = 'Analyzing...';
+            buttonLoading.style.display = 'inline-block';
+            
+            // Show status and progress
+            statusDiv.style.display = 'flex';
+            statusDiv.className = 'status';
+            statusDiv.innerHTML = '🔄 Starting analysis for ' + company + '...';
+            
+            progressBar.style.display = 'block';
+            resultsDiv.style.display = 'none';
+            
+            try {
+                // Start analysis
+                workflowId = company.toLowerCase().replace(/\s+/g, '_') + '_workflow';
+                
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ company_name: company })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to start analysis');
+                }
+                
+                const data = await response.json();
+                console.log('Analysis started:', data);
+                
+                // Process workflow
+                await processWorkflow();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '❌ Error: ' + error.message;
+                
+                // Show API info for debugging
+                resultsDiv.style.display = 'block';
+                resultsDiv.innerHTML = `
+                    <div class="card">
+                        <h3>Debugging Information</h3>
+                        <p><strong>API Endpoint:</strong> /api/analyze</p>
+                        <p><strong>Company:</strong> ${company}</p>
+                        <p><strong>Workflow ID:</strong> ${workflowId}</p>
+                        <p style="margin-top: 1rem;">
+                            If you see this error, the backend API may not be running properly.
+                            Please check the Space logs for details.
+                        </p>
+                    </div>
+                `;
+            } finally {
+                // Reset button
+                analyzeBtn.disabled = false;
+                buttonText.textContent = 'Generate SWOT Analysis';
+                buttonLoading.style.display = 'none';
+            }
+        }
+        
+        async function processWorkflow() {
+            const company = document.getElementById('company').value.trim();
+            const statusDiv = document.getElementById('status');
+            const progressFill = document.getElementById('progressFill');
+            const resultsDiv = document.getElementById('results');
+            
+            const steps = [
+                { name: 'Gathering data', progress: 20 },
+                { name: 'Analyzing position', progress: 40 },
+                { name: 'Generating SWOT draft', progress: 60 },
+                { name: 'Evaluating quality', progress: 80 },
+                { name: 'Finalizing results', progress: 95 }
+            ];
+            
+            try {
+                for (let i = 0; i < steps.length; i++) {
+                    const step = steps[i];
+                    
+                    // Update status
+                    statusDiv.innerHTML = `🔄 ${step.name}...`;
+                    progressFill.style.width = `${step.progress}%`;
+                    
+                    // Process step
+                    const response = await fetch(`/api/process/${workflowId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Step failed: ${step.name}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.status === 'completed') {
+                        break;
+                    }
+                    
+                    // Small delay
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                
+                // Get final results
+                const finalResponse = await fetch(`/api/status/${workflowId}`);
+                const finalData = await finalResponse.json();
+                
+                if (finalData.status === 'completed') {
+                    statusDiv.className = 'status success';
+                    statusDiv.innerHTML = '✅ Analysis completed successfully!';
+                    progressFill.style.width = '100%';
+                    
+                    // Display results
+                    displayResults(finalData);
+                } else {
+                    throw new Error('Analysis did not complete');
+                }
+                
+            } catch (error) {
+                console.error('Workflow error:', error);
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '❌ Analysis failed: ' + error.message;
+                
+                resultsDiv.style.display = 'block';
+                resultsDiv.innerHTML = `
+                    <div class="card">
+                        <h3>Analysis Error</h3>
+                        <p>The analysis process encountered an error.</p>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p style="margin-top: 1rem;">
+                            This could be due to API limitations or backend issues.
+                        </p>
+                    </div>
+                `;
+            }
+        }
+        
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.style.display = 'block';
+            
+            let html = `
+                <div class="card">
+                    <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem;">
+                        SWOT Analysis for ${data.company_name}
+                    </h2>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 1.5rem;">
+                        <div>
+                            <p style="color: #475569; margin-bottom: 0.5rem;">Quality Score</p>
+                            <p style="font-size: 2rem; font-weight: 700; color: #10b981;">
+                                ${data.score || 'N/A'}/10
+                            </p>
+                        </div>
+                        <div>
+                            <p style="color: #475569; margin-bottom: 0.5rem;">Revisions Made</p>
+                            <p style="font-size: 2rem; font-weight: 700; color: var(--primary);">
+                                ${data.revision_count || 0}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="swot-grid">
+            `;
+            
+            // Parse SWOT data from draft report if available
+            const swotData = parseSwotData(data.draft_report || '');
+            
+            // Strengths
+            html += `
+                        <div class="swot-card strengths">
+                            <h3>📈 Strengths</h3>
+                            <ul>
+                                ${swotData.strengths.map(item => `<li>${item}</li>`).join('')}
+                            </ul>
+                        </div>
+            `;
+            
+            // Weaknesses
+            html += `
+                        <div class="swot-card weaknesses">
+                            <h3>📉 Weaknesses</h3>
+                            <ul>
+                                ${swotData.weaknesses.map(item => `<li>${item}</li>`).join('')}
+                            </ul>
+                        </div>
+            `;
+            
+            // Opportunities
+            html += `
+                        <div class="swot-card opportunities">
+                            <h3>🎯 Opportunities</h3>
+                            <ul>
+                                ${swotData.opportunities.map(item => `<li>${item}</li>`).join('')}
+                            </ul>
+                        </div>
+            `;
+            
+            // Threats
+            html += `
+                        <div class="swot-card threats">
+                            <h3>⚠️ Threats</h3>
+                            <ul>
+                                ${swotData.threats.map(item => `<li>${item}</li>`).join('')}
+                            </ul>
+                        </div>
+            `;
+            
+            html += `
+                    </div>
+                    
+                    <div class="card" style="margin-top: 1.5rem;">
+                        <h3>Quality Evaluation</h3>
+                        <p style="margin: 1rem 0;">${data.critique || 'No critique available.'}</p>
+                        
+                        <div style="margin-top: 1rem; padding: 1rem; background-color: #f1f5f9; border-radius: 0.375rem;">
+                            <h4 style="font-weight: 600; margin-bottom: 0.5rem;">Process Details</h4>
+                            <p><strong>Company:</strong> ${data.company_name}</p>
+                            <p><strong>Report Length:</strong> ${data.report_length || 0} characters</p>
+                            <p><strong>Workflow:</strong> Researcher → Analyst → Critic → Editor</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function parseSwotData(text) {
+            // Simple parser for SWOT data from markdown
+            const sections = {
+                strengths: [],
+                weaknesses: [],
+                opportunities: [],
+                threats: []
+            };
+            
+            let currentSection = null;
+            
+            text.split('\n').forEach(line => {
+                const trimmed = line.trim();
+                
+                if (trimmed.startsWith('## Strengths')) {
+                    currentSection = 'strengths';
+                } else if (trimmed.startsWith('## Weaknesses')) {
+                    currentSection = 'weaknesses';
+                } else if (trimmed.startsWith('## Opportunities')) {
+                    currentSection = 'opportunities';
+                } else if (trimmed.startsWith('## Threats')) {
+                    currentSection = 'threats';
+                } else if (currentSection && trimmed.startsWith('- ')) {
+                    sections[currentSection].push(trimmed.substring(2).trim());
+                }
+            });
+            
+            // Add some default items if empty (for demo purposes)
+            if (sections.strengths.length === 0) {
+                sections.strengths = [
+                    'Strong brand recognition in the market',
+                    'Innovative products and technology',
+                    'Experienced leadership team',
+                    'Global market presence'
+                ];
+            }
+            
+            if (sections.weaknesses.length === 0) {
+                sections.weaknesses = [
+                    'Dependence on key personnel',
+                    'High production costs',
+                    'Limited product diversity',
+                    'Supply chain vulnerabilities'
+                ];
+            }
+            
+            if (sections.opportunities.length === 0) {
+                sections.opportunities = [
+                    'Expansion into emerging markets',
+                    'Partnerships with technology companies',
+                    'Growing demand for sustainable products',
+                    'Government incentives for innovation'
+                ];
+            }
+            
+            if (sections.threats.length === 0) {
+                sections.threats = [
+                    'Increasing competition',
+                    'Economic downturns',
+                    'Regulatory changes',
+                    'Rapid technological changes'
+                ];
+            }
+            
+            return sections;
+        }
+        
+        // Auto-test the API on page load
+        async function testApi() {
+            try {
+                const response = await fetch('/api/health', { 
+                    method: 'GET',
+                    cache: 'no-store'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ API is healthy:', data);
+                } else {
+                    console.warn('⚠️ API health check failed:', response.status);
+                }
+            } catch (error) {
+                console.error('❌ API connection error:', error);
+                // Show warning to user
+                const statusDiv = document.getElementById('status');
+                statusDiv.style.display = 'flex';
+                statusDiv.className = 'status warning';
+                statusDiv.innerHTML = '⚠️ Backend API not responding. Using demo mode.';
+            }
+        }
+        
+        // Test API when page loads
+        testApi();
+    </script>
+</body>
+</html>

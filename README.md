@@ -3,7 +3,8 @@ title: A2A Strategy Agent
 emoji: 🤖
 colorFrom: blue
 colorTo: purple
-sdk: docker
+sdk: static
+app_port: 8002
 pinned: false
 ---
 

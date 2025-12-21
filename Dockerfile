@@ -1,43 +1,33 @@
-# Simplified Dockerfile for A2A Strategy Agent - Single Stage Build
-# This approach is more reliable for Hugging Face Spaces
+# Dockerfile for A2A Strategy Agent - Static Space Version
+# This serves the HTML frontend and runs the FastAPI backend
 
 FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies including Node.js
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
-    git \
-    nodejs \
-    npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install global Node.js tools
-RUN npm install -g serve
-
-# Copy the entire application
+# Copy the application
 COPY . .
 
-# Install frontend dependencies and build
-WORKDIR /app/frontend
-RUN npm install --legacy-peer-deps
-RUN npm run build
-
-# Go back to app directory
-WORKDIR /app
+# Environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PORT=8002
 
 # Expose ports
 EXPOSE 8002
-EXPOSE 3000
 
-# Make startup script executable
-RUN chmod +x start_space.sh
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s \
+    CMD curl -f http://localhost:8002/api/health || exit 1
 
-# Start both services
-CMD ["./start_space.sh"]
+# Start the backend
+CMD ["python", "api_real.py"]
