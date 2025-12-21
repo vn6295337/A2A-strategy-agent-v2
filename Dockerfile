@@ -1,61 +1,43 @@
-# Dockerfile for A2A Strategy Agent with React Frontend and FastAPI Backend
+# Simplified Dockerfile for A2A Strategy Agent - Single Stage Build
+# This approach is more reliable for Hugging Face Spaces
 
-# Stage 1: Build the React frontend
-FROM node:18-alpine as frontend-builder
-
-WORKDIR /app/frontend
-
-# Copy package files
-COPY frontend/package.json ./
-
-# Install dependencies
-RUN npm install
-
-# Copy frontend source
-COPY frontend/src ./src
-COPY frontend/public ./public
-COPY frontend/vite.config.ts ./
-
-# Build the frontend
-RUN npm run build
-
-# Stage 2: Build the Python backend
 FROM python:3.11-slim
 
+# Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including Node.js
 RUN apt-get update && apt-get install -y \
     curl \
     git \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy backend requirements
-COPY requirements.txt ./
-
 # Install Python dependencies
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application
+# Install global Node.js tools
+RUN npm install -g serve
+
+# Copy the entire application
 COPY . .
 
-# Copy the built frontend from the builder stage
-COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
+# Install frontend dependencies and build
+WORKDIR /app/frontend
+RUN npm install --legacy-peer-deps
+RUN npm run build
 
-# Install serve to serve the frontend
-RUN npm install -g serve
+# Go back to app directory
+WORKDIR /app
 
 # Expose ports
 EXPOSE 8002
 EXPOSE 3000
 
-# Environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PORT=8002
-
-# Copy and make startup script executable
-COPY start_space.sh ./
+# Make startup script executable
 RUN chmod +x start_space.sh
 
-# Command to run the startup script
+# Start both services
 CMD ["./start_space.sh"]
