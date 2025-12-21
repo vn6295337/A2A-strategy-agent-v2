@@ -1,3 +1,14 @@
+---
+title: A2A Strategy Agent
+emoji: 🤖
+colorFrom: blue
+colorTo: purple
+sdk: streamlit
+sdk_version: "1.36.0"
+app_file: app.py
+pinned: false
+---
+
 # ✨ A2A Strategy Agent
 
 **AI-Powered Strategic Analysis with Self-Correcting Quality Control**
