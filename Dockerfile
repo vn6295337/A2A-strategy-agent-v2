@@ -6,7 +6,7 @@ FROM node:18-alpine as frontend-builder
 WORKDIR /app/frontend
 
 # Copy package files
-COPY frontend/package.json frontend/package-lock.json* ./
+COPY frontend/package.json ./
 
 # Install dependencies
 RUN npm install
@@ -46,8 +46,8 @@ COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 RUN npm install -g serve
 
 # Expose ports
-EXPOSE 8002  # FastAPI backend
-EXPOSE 3000  # React frontend
+EXPOSE 8002
+EXPOSE 3000
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1

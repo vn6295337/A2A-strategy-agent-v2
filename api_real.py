@@ -263,4 +263,11 @@ async def get_swot_data(workflow_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8002)
+    import os
+    
+    # Get port from environment or use default
+    port = int(os.environ.get("PORT", 8002))
+    host = os.environ.get("HOST", "0.0.0.0")
+    
+    print(f"🌐 Starting FastAPI server on {host}:{port}")
+    uvicorn.run(app, host=host, port=port)

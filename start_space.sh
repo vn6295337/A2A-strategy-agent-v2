@@ -9,14 +9,29 @@ python api_real.py &
 BACKEND_PID=$!
 
 # Give the backend a moment to start
-sleep 5
+sleep 10
 
-# Check if backend is running
+# Check if backend is running (with retry logic)
 echo "🔍 Checking backend status..."
-if curl -s http://localhost:8002/api/health &> /dev/null; then
-    echo "✅ Backend is running successfully!"
-else
-    echo "❌ Error: Backend failed to start"
+MAX_RETRIES=5
+RETRY_COUNT=0
+BACKEND_READY=false
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if curl -s http://localhost:8002/api/health &> /dev/null; then
+        echo "✅ Backend is running successfully!"
+        BACKEND_READY=true
+        break
+    fi
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    echo "⏳ Retrying backend check ($RETRY_COUNT/$MAX_RETRIES)..."
+    sleep 5
+ done
+
+if [ "$BACKEND_READY" = false ]; then
+    echo "❌ Error: Backend failed to start after $MAX_RETRIES attempts"
+    echo "📝 Backend logs:"
+    tail -20 nohup.out 2>/dev/null || echo "No log file found"
     exit 1
 fi
 
