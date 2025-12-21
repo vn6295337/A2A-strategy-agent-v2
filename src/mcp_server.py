@@ -1,4 +1,8 @@
-from mcp.server import FastMCP as MCP
+try:
+    from mcp.server import FastMCP as MCP
+except ImportError:
+    # Fall back to mock implementation if MCP package is not available
+    from src.mcp_mock import FastMCP as MCP
 import sqlite3
 import os
 

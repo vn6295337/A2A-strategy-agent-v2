@@ -13,7 +13,11 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import sqlite3
-from mcp.server import FastMCP as MCP
+try:
+    from mcp.server import FastMCP as MCP
+except ImportError:
+    # Fall back to mock implementation if MCP package is not available
+    from src.mcp_mock import FastMCP as MCP
 
 def test_database():
     """Test the SQLite database"""
