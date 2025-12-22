@@ -1,33 +1,38 @@
 import { useState, useEffect, useRef } from "react"
-import { Button } from "./components/ui/button"
-import { Input } from "./components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs"
-import { Progress } from "./components/ui/progress"
-import { Badge } from "./components/ui/badge"
-import { Separator } from "./components/ui/separator"
-import { startAnalysis, getWorkflowStatus, getWorkflowResult, checkHealth } from "./lib/api"
-import { AnalysisResponse } from "./lib/types"
-
-// Mock icons - we'll replace these with proper imports later
-const Brain = () => <span>🧠</span>
-const TrendingUp = () => <span>📈</span>
-const TrendingDown = () => <span>📉</span>
-const Target = () => <span>🎯</span>
-const AlertTriangle = () => <span>⚠️</span>
-const CheckCircle = () => <span>✅</span>
-const XCircle = () => <span>❌</span>
-const AlertCircle = () => <span>ℹ️</span>
-const BarChart3 = () => <span>📊</span>
-const FileText = () => <span>📄</span>
-const Settings = () => <span>⚙️</span>
-const RefreshCw = () => <span>🔄</span>
-const Zap = () => <span>⚡</span>
-const Database = () => <span>🗃️</span>
-const GitBranch = () => <span>🌳</span>
-const Play = () => <span>▶️</span>
-const Sun = () => <span>☀️</span>
-const Moon = () => <span>🌙</span>
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Progress } from "@/components/ui/progress"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Toaster } from "@/components/ui/toaster"
+import { Toaster as Sonner } from "@/components/ui/sonner"
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { startAnalysis, getWorkflowStatus, getWorkflowResult, checkHealth } from "@/lib/api"
+import { AnalysisResponse } from "@/lib/types"
+import {
+  Brain,
+  TrendingUp,
+  TrendingDown,
+  Target,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  BarChart3,
+  FileText,
+  Settings,
+  RefreshCw,
+  Zap,
+  Database,
+  GitBranch,
+  Play,
+  Sun,
+  Moon,
+} from "lucide-react"
 
 // Sample SWOT data for Tesla
 const swotData = {
@@ -81,7 +86,26 @@ const stepMap: Record<string, number> = {
   Editor: 4,
 }
 
-export default function App() {
+const queryClient = new QueryClient()
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+)
+
+export default App
+
+const Index = () => {
   const [company, setCompany] = useState("Tesla")
   const [isLoading, setIsLoading] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
@@ -168,9 +192,9 @@ export default function App() {
   }, [])
 
   const getScoreColor = (score: number) => {
-    if (score >= 7) return "text-green-600 dark:text-green-400"
-    if (score >= 5) return "text-yellow-600 dark:text-yellow-400"
-    return "text-red-600 dark:text-red-400"
+    if (score >= 7) return "text-success"
+    if (score >= 5) return "text-warning"
+    return "text-destructive"
   }
 
   const getScoreBadge = (score: number) => {
@@ -222,7 +246,10 @@ export default function App() {
     revisionCount: analysisData.revision_count,
     reportLength: analysisData.report_length,
     critique: analysisData.critique,
-    ...analysisData.swot_data
+    strengths: analysisData.swot_data.strengths,
+    weaknesses: analysisData.swot_data.weaknesses,
+    opportunities: analysisData.swot_data.opportunities,
+    threats: analysisData.swot_data.threats,
   }
 
   const scoreBadge = getScoreBadge(swotData.score)
@@ -330,10 +357,10 @@ export default function App() {
                         <div
                           className={`flex h-6 w-6 items-center justify-center rounded-full ${
                             isComplete
-                              ? "bg-green-500 text-white"
+                              ? "bg-success text-success-foreground"
                               : isCurrent
-                              ? "bg-blue-500 text-white"
-                              : "bg-gray-200 text-gray-500"
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground"
                           }`}
                         >
                           {isComplete ? (
@@ -475,9 +502,9 @@ export default function App() {
                   <TabsContent value="analysis" className="mt-6">
                     <div className="grid gap-4 md:grid-cols-2">
                       {/* Strengths */}
-                      <Card className="border-l-4 border-l-green-500">
+                      <Card className="border-l-4 border-l-strength">
                         <CardHeader className="pb-3">
-                          <CardTitle className="flex items-center gap-2 text-base text-green-600">
+                          <CardTitle className="flex items-center gap-2 text-base text-strength">
                             <TrendingUp />
                             Strengths
                           </CardTitle>
@@ -489,7 +516,7 @@ export default function App() {
                                 key={i}
                                 className="flex gap-2 text-sm text-foreground"
                               >
-                                <CheckCircle className="text-green-500" />
+                                <CheckCircle className="text-strength shrink-0 mt-0.5" />
                                 <span>{item}</span>
                               </li>
                             ))}
@@ -498,9 +525,9 @@ export default function App() {
                       </Card>
 
                       {/* Weaknesses */}
-                      <Card className="border-l-4 border-l-red-500">
+                      <Card className="border-l-4 border-l-weakness">
                         <CardHeader className="pb-3">
-                          <CardTitle className="flex items-center gap-2 text-base text-red-600">
+                          <CardTitle className="flex items-center gap-2 text-base text-weakness">
                             <TrendingDown />
                             Weaknesses
                           </CardTitle>
@@ -512,7 +539,7 @@ export default function App() {
                                 key={i}
                                 className="flex gap-2 text-sm text-foreground"
                               >
-                                <XCircle className="text-red-500" />
+                                <XCircle className="text-weakness shrink-0 mt-0.5" />
                                 <span>{item}</span>
                               </li>
                             ))}
@@ -521,9 +548,9 @@ export default function App() {
                       </Card>
 
                       {/* Opportunities */}
-                      <Card className="border-l-4 border-l-blue-500">
+                      <Card className="border-l-4 border-l-opportunity">
                         <CardHeader className="pb-3">
-                          <CardTitle className="flex items-center gap-2 text-base text-blue-600">
+                          <CardTitle className="flex items-center gap-2 text-base text-opportunity">
                             <Target />
                             Opportunities
                           </CardTitle>
@@ -535,7 +562,7 @@ export default function App() {
                                 key={i}
                                 className="flex gap-2 text-sm text-foreground"
                               >
-                                <Zap className="text-blue-500" />
+                                <Zap className="text-opportunity shrink-0 mt-0.5" />
                                 <span>{item}</span>
                               </li>
                             ))}
@@ -544,9 +571,9 @@ export default function App() {
                       </Card>
 
                       {/* Threats */}
-                      <Card className="border-l-4 border-l-yellow-500">
+                      <Card className="border-l-4 border-l-threat">
                         <CardHeader className="pb-3">
-                          <CardTitle className="flex items-center gap-2 text-base text-yellow-600">
+                          <CardTitle className="flex items-center gap-2 text-base text-threat">
                             <AlertTriangle />
                             Threats
                           </CardTitle>
@@ -558,7 +585,7 @@ export default function App() {
                                 key={i}
                                 className="flex gap-2 text-sm text-foreground"
                               >
-                                <AlertCircle className="text-yellow-500" />
+                                <AlertCircle className="text-threat shrink-0 mt-0.5" />
                                 <span>{item}</span>
                               </li>
                             ))}
@@ -595,7 +622,7 @@ export default function App() {
                           <Separator />
 
                           <div className="grid grid-cols-2 gap-4">
-                            <div className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
+                            <div className="text-center p-4 rounded-lg bg-muted/50">
                               <p className="text-2xl font-bold text-foreground">
                                 {swotData.revisionCount}
                               </p>
@@ -603,7 +630,7 @@ export default function App() {
                                 Revisions Made
                               </p>
                             </div>
-                            <div className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
+                            <div className="text-center p-4 rounded-lg bg-muted/50">
                               <p className="text-2xl font-bold text-foreground">
                                 {swotData.reportLength.toLocaleString()}
                               </p>
@@ -666,7 +693,7 @@ export default function App() {
                             </div>
                           </div>
 
-                          <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
+                          <div className="p-4 rounded-lg bg-muted/50">
                             <h4 className="font-medium mb-3 flex items-center gap-2">
                               <RefreshCw />
                               Self-Correcting Process
@@ -746,6 +773,18 @@ export default function App() {
           </div>
         </div>
       </footer>
+    </div>
+  )
+}
+
+const NotFound = () => {
+  return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+      <div className="text-center space-y-4">
+        <h1 className="text-4xl font-bold text-foreground">404</h1>
+        <p className="text-xl text-muted-foreground">Page Not Found</p>
+        <Button onClick={() => window.location.href = '/'}>Go Home</Button>
+      </div>
     </div>
   )
 }
