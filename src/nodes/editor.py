@@ -1,4 +1,4 @@
-from langchain_groq import ChatGroq
+from src.llm_client import get_llm_client
 from langsmith import traceable
 
 @traceable(name="Editor")
@@ -14,9 +14,10 @@ def editor_node(state, workflow_id=None, progress_store=None):
             "revision_count": state.get("revision_count", 0),
             "score": state.get("score", 0)
         })
-    
-    llm = ChatGroq(temperature=0, model="llama-3.1-8b-instant")
-    
+
+    llm = get_llm_client()
+    strategy_name = state.get("strategy_focus", "Cost Leadership")
+
     # Prepare the revision prompt
     prompt = f"""
 Revise this SWOT draft based on the following critique:
@@ -27,24 +28,30 @@ Draft:
 Critique:
 {state['critique']}
 
-Strategic Focus: Cost Leadership
+Strategic Focus: {strategy_name}
 
 Please improve the draft by:
 1. Adding specific facts and numbers if missing
 2. Ensuring all 4 SWOT sections are present and complete
 3. Making sure strengths/opportunities are distinct from weaknesses/threats
-4. Aligning with the Cost Leadership strategic focus
+4. Aligning with the {strategy_name} strategic focus
 
 Return only the improved SWOT analysis in the same format.
 """
-    
+
     # Get the revised draft from LLM
-    response = llm.invoke(prompt)
-    
-    # Update the state with revised draft and increment revision count
-    state["draft_report"] = response.content
+    response, provider, error = llm.query(prompt, temperature=0)
+
+    if error:
+        print(f"Editor LLM error: {error}")
+        # Keep the existing draft if revision fails
+    else:
+        state["draft_report"] = response
+        state["provider_used"] = provider
+
+    # Increment revision count
     state["revision_count"] = state.get("revision_count", 0) + 1
-    
+
     # Update progress with new revision count
     if workflow_id and progress_store:
         progress_store[workflow_id].update({
@@ -52,5 +59,5 @@ Return only the improved SWOT analysis in the same format.
             "revision_count": state["revision_count"],
             "score": state.get("score", 0)
         })
-    
+
     return state

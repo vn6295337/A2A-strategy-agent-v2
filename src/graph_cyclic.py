@@ -54,18 +54,22 @@ app = workflow.compile()
 
 # Wrapped execution with enhanced tracing
 @traceable(name="Run - Self-Correcting SWOT Analysis", tags=["cyclic", "quality-control", "demo"], metadata={"purpose": "iterative_improvement"})
-def run_self_correcting_workflow(company_name="Tesla", workflow_id=None, progress_store=None):
+def run_self_correcting_workflow(company_name="Tesla", strategy_focus="Cost Leadership", workflow_id=None, progress_store=None):
     """Execute the complete self-correcting SWOT analysis workflow"""
-    
+
     # Initialize state with default values
     initial_state = {
         "company_name": company_name,
+        "strategy_focus": strategy_focus,
         "raw_data": None,
         "draft_report": None,
         "critique": None,
         "revision_count": 0,
         "messages": [],
         "score": 0,
+        "data_source": "live",
+        "provider_used": None,
+        "sources_failed": [],
         "workflow_id": workflow_id,
         "progress_store": progress_store
     }

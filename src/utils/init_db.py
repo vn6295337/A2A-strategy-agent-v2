@@ -8,15 +8,22 @@ cursor = conn.cursor()
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS focus_areas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    strategy_name TEXT NOT NULL,
+    strategy_name TEXT NOT NULL UNIQUE,
     description TEXT NOT NULL
 )
 """)
 
-cursor.execute("""
-INSERT INTO focus_areas (strategy_name, description)
-VALUES (?, ?)
-""", ("Cost Leadership", "Focus on pricing efficiency and supply chain optimization."))
+strategies = [
+    ("Cost Leadership", "Focus on pricing efficiency, economies of scale, and supply chain optimization to achieve lowest cost position in the industry."),
+    ("Differentiation", "Focus on unique product features, brand strength, innovation, and customer experience to command premium pricing."),
+    ("Focus/Niche", "Focus on serving a specific market segment exceptionally well, with deep expertise and tailored solutions."),
+]
+
+for strategy_name, description in strategies:
+    cursor.execute("""
+    INSERT OR IGNORE INTO focus_areas (strategy_name, description)
+    VALUES (?, ?)
+    """, (strategy_name, description))
 
 conn.commit()
 conn.close()

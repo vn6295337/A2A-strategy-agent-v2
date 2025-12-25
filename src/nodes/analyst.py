@@ -1,5 +1,5 @@
-from langchain_groq import ChatGroq
 from src.tools import get_strategy_context
+from src.llm_client import get_llm_client
 from langsmith import traceable
 
 @traceable(name="Analyst")
@@ -11,16 +11,18 @@ def analyst_node(state, workflow_id=None, progress_store=None):
             "revision_count": state.get("revision_count", 0),
             "score": state.get("score", 0)
         })
-    
-    llm = ChatGroq(temperature=0, model="llama-3.1-8b-instant")
+
+    llm = get_llm_client()
     raw = state["raw_data"]
-    strategy_focus = get_strategy_context("Cost Leadership")
+    strategy_name = state.get("strategy_focus", "Cost Leadership")
+    strategy_context = get_strategy_context(strategy_name)
     company = state["company_name"]
 
     prompt = f"""
 Use the following data to draft a SWOT analysis of {company}.
 
-Strategic Focus: {strategy_focus}
+Strategic Focus: {strategy_name}
+Context: {strategy_context}
 
 Data:
 {raw}
@@ -31,15 +33,13 @@ Return only the SWOT in this format:
 - Opportunities:
 - Threats:
 """
-    response = llm.invoke(prompt)
-    state["draft_report"] = response.content
-    
-    # Add metadata about the analysis for better traceability
-    state["analysis_metadata"] = {
-        "company": company,
-        "strategy_focus": "Cost Leadership",
-        "report_length": len(response.content),
-        "analysis_type": "SWOT"
-    }
-    
+    response, provider, error = llm.query(prompt, temperature=0)
+
+    if error:
+        state["draft_report"] = f"Error generating analysis: {error}"
+        state["provider_used"] = None
+    else:
+        state["draft_report"] = response
+        state["provider_used"] = provider
+
     return state

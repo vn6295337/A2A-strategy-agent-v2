@@ -9,10 +9,25 @@ import { Separator } from "@/components/ui/separator"
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as Sonner } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 import { startAnalysis, getWorkflowStatus, getWorkflowResult, checkHealth } from "@/lib/api"
 import { AnalysisResponse } from "@/lib/types"
+import { useIsMobile } from "@/hooks/use-mobile"
 import {
   Brain,
   TrendingUp,
@@ -32,6 +47,11 @@ import {
   Play,
   Sun,
   Moon,
+  Menu,
+  Copy,
+  Download,
+  Printer,
+  Check,
 } from "lucide-react"
 
 // Sample SWOT data for Tesla
@@ -105,8 +125,173 @@ const App = () => (
 
 export default App
 
+const STRATEGIES = [
+  { value: "Cost Leadership", label: "Cost Leadership" },
+  { value: "Differentiation", label: "Differentiation" },
+  { value: "Focus/Niche", label: "Focus/Niche" },
+]
+
+// Sidebar content component - shared between desktop sidebar and mobile sheet
+interface SidebarContentProps {
+  company: string
+  setCompany: (value: string) => void
+  strategy: string
+  setStrategy: (value: string) => void
+  isLoading: boolean
+  handleGenerate: () => void
+  currentStep: number
+}
+
+const SidebarContent = ({
+  company,
+  setCompany,
+  strategy,
+  setStrategy,
+  isLoading,
+  handleGenerate,
+  currentStep,
+}: SidebarContentProps) => (
+  <div className="space-y-6">
+    {/* Input Card */}
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Settings className="h-4 w-4" />
+          Configuration
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">
+            Company Name
+          </label>
+          <Input
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            placeholder="Enter company name"
+            disabled={isLoading}
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">
+            Strategic Lens
+          </label>
+          <Select
+            value={strategy}
+            onValueChange={setStrategy}
+            disabled={isLoading}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select strategy" />
+            </SelectTrigger>
+            <SelectContent>
+              {STRATEGIES.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button
+          onClick={handleGenerate}
+          disabled={isLoading || !company.trim()}
+          className="w-full gap-2 btn-glow"
+        >
+          {isLoading ? (
+            <RefreshCw className="h-4 w-4 animate-spin" />
+          ) : (
+            <Play className="h-4 w-4" />
+          )}
+          {isLoading ? "Processing..." : "Generate SWOT"}
+        </Button>
+      </CardContent>
+    </Card>
+
+    {/* Process Steps Card */}
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <GitBranch className="h-4 w-4" />
+          Agent Workflow
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {loadingSteps.map((step, index) => {
+            const Icon = step.icon
+            const isComplete = currentStep > index
+            const isCurrent = currentStep === index + 1 && isLoading
+
+            return (
+              <div
+                key={index}
+                className={`flex items-center gap-3 text-sm transition-opacity ${
+                  isComplete || isCurrent
+                    ? "opacity-100"
+                    : "opacity-40"
+                }`}
+              >
+                <div
+                  className={`flex h-6 w-6 items-center justify-center rounded-full ${
+                    isComplete
+                      ? "bg-success text-success-foreground"
+                      : isCurrent
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {isComplete ? (
+                    <CheckCircle className="h-3 w-3" />
+                  ) : isCurrent ? (
+                    <RefreshCw className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Icon className="h-3 w-3" />
+                  )}
+                </div>
+                <span
+                  className={
+                    isComplete || isCurrent
+                      ? "text-foreground"
+                      : "text-muted-foreground"
+                  }
+                >
+                  {step.label}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* About Card */}
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">How It Works</CardTitle>
+      </CardHeader>
+      <CardContent className="text-sm text-muted-foreground space-y-2">
+        <p>
+          The system uses a multi-agent architecture with automatic
+          quality control:
+        </p>
+        <ol className="list-decimal list-inside space-y-1 pl-1">
+          <li>Researcher gathers data</li>
+          <li>Analyst creates SWOT draft</li>
+          <li>Critic evaluates quality (1-10)</li>
+          <li>Editor improves if score &lt; 7</li>
+        </ol>
+        <p className="pt-2">
+          Loop continues until quality ≥ 7 or max 3 revisions.
+        </p>
+      </CardContent>
+    </Card>
+  </div>
+)
+
 const Index = () => {
   const [company, setCompany] = useState("Tesla")
+  const [strategy, setStrategy] = useState("Cost Leadership")
   const [isLoading, setIsLoading] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [showResults, setShowResults] = useState(false)
@@ -116,7 +301,73 @@ const Index = () => {
   const [workflowId, setWorkflowId] = useState<string | null>(null)
   const [revisionCount, setRevisionCount] = useState(0)
   const [score, setScore] = useState(0)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
+  const isMobile = useIsMobile()
+
+  // Export functions
+  const formatSwotForClipboard = () => {
+    const data = analysisResult || analysisData
+    return `SWOT Analysis: ${data.company_name}
+Strategy Focus: ${strategy}
+Quality Score: ${data.score}/10
+Revisions: ${data.revision_count}
+
+STRENGTHS:
+${data.swot_data.strengths.map(s => `• ${s}`).join('\n')}
+
+WEAKNESSES:
+${data.swot_data.weaknesses.map(w => `• ${w}`).join('\n')}
+
+OPPORTUNITIES:
+${data.swot_data.opportunities.map(o => `• ${o}`).join('\n')}
+
+THREATS:
+${data.swot_data.threats.map(t => `• ${t}`).join('\n')}
+
+QUALITY EVALUATION:
+${data.critique}
+
+---
+Generated by A2A Strategy Agent`
+  }
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(formatSwotForClipboard())
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+    }
+  }
+
+  const downloadAsJson = () => {
+    const data = analysisResult || analysisData
+    const exportData = {
+      company_name: data.company_name,
+      strategy_focus: strategy,
+      score: data.score,
+      revision_count: data.revision_count,
+      swot_data: data.swot_data,
+      critique: data.critique,
+      exported_at: new Date().toISOString()
+    }
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `swot-analysis-${data.company_name.toLowerCase().replace(/\s+/g, '-')}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const printAnalysis = () => {
+    window.print()
+  }
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDark)
@@ -131,7 +382,7 @@ const Index = () => {
 
     try {
       // Start analysis workflow
-      const { workflow_id } = await startAnalysis(company)
+      const { workflow_id } = await startAnalysis(company, strategy)
       setWorkflowId(workflow_id)
       
       // Start polling for status updates
@@ -257,26 +508,57 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-6 py-4">
+      <header className="border-b border-border bg-card sticky top-0 z-40">
+        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                <Brain />
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Mobile Menu Button */}
+              {isMobile && (
+                <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                  <SheetTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 lg:hidden">
+                      <Menu className="h-5 w-5" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-[300px] overflow-y-auto">
+                    <SheetHeader className="mb-4">
+                      <SheetTitle className="flex items-center gap-2">
+                        <Brain className="h-5 w-5 text-primary" />
+                        Configuration
+                      </SheetTitle>
+                    </SheetHeader>
+                    <SidebarContent
+                      company={company}
+                      setCompany={setCompany}
+                      strategy={strategy}
+                      setStrategy={setStrategy}
+                      isLoading={isLoading}
+                      handleGenerate={() => {
+                        setSidebarOpen(false)
+                        handleGenerate()
+                      }}
+                      currentStep={currentStep}
+                    />
+                  </SheetContent>
+                </Sheet>
+              )}
+              <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary">
+                <Brain className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-foreground">
+                <h1 className="text-lg sm:text-xl font-semibold text-foreground">
                   A2A Strategy Agent
                 </h1>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
                   Strategic SWOT Analysis with Self-Correcting AI
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Badge variant="outline" className="gap-1.5">
-                <Zap />
-                Agentic Automation Demo
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Badge variant="outline" className="gap-1.5 hidden sm:flex">
+                <Zap className="h-3 w-3" />
+                <span className="hidden md:inline">Agentic Automation Demo</span>
+                <span className="md:hidden">Demo</span>
               </Badge>
               <Button
                 variant="ghost"
@@ -284,131 +566,29 @@ const Index = () => {
                 onClick={() => setIsDark(!isDark)}
                 className="h-8 w-8"
               >
-                {isDark ? <Sun /> : <Moon />}
+                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-6 py-6">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-          {/* Sidebar */}
-          <aside className="space-y-6">
-            {/* Input Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Settings />
-                  Configuration
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">
-                    Company Name
-                  </label>
-                  <Input
-                    value={company}
-                    onChange={(e) => setCompany(e.target.value)}
-                    placeholder="Enter company name"
-                    disabled={isLoading}
-                  />
-                </div>
-                <Button
-                  onClick={handleGenerate}
-                  disabled={isLoading || !company.trim()}
-                  className="w-full gap-2"
-                >
-                  {isLoading ? (
-                    <RefreshCw />
-                  ) : (
-                    <Play />
-                  )}
-                  {isLoading ? "Processing..." : "Generate SWOT"}
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Process Steps Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <GitBranch />
-                  Agent Workflow
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {loadingSteps.map((step, index) => {
-                    const Icon = step.icon
-                    const isComplete = currentStep > index
-                    const isCurrent = currentStep === index + 1 && isLoading
-
-                    return (
-                      <div
-                        key={index}
-                        className={`flex items-center gap-3 text-sm transition-opacity ${
-                          isComplete || isCurrent
-                            ? "opacity-100"
-                            : "opacity-40"
-                        }`}
-                      >
-                        <div
-                          className={`flex h-6 w-6 items-center justify-center rounded-full ${
-                            isComplete
-                              ? "bg-success text-success-foreground"
-                              : isCurrent
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-muted-foreground"
-                          }`}
-                        >
-                          {isComplete ? (
-                            <CheckCircle />
-                          ) : isCurrent ? (
-                            <RefreshCw />
-                          ) : (
-                            <Icon />
-                          )}
-                        </div>
-                        <span
-                          className={
-                            isComplete || isCurrent
-                              ? "text-foreground"
-                              : "text-muted-foreground"
-                          }
-                        >
-                          {step.label}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* About Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">How It Works</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-muted-foreground space-y-2">
-                <p>
-                  The system uses a multi-agent architecture with automatic
-                  quality control:
-                </p>
-                <ol className="list-decimal list-inside space-y-1 pl-1">
-                  <li>Researcher gathers data</li>
-                  <li>Analyst creates SWOT draft</li>
-                  <li>Critic evaluates quality (1-10)</li>
-                  <li>Editor improves if score &lt; 7</li>
-                </ol>
-                <p className="pt-2">
-                  Loop continues until quality ≥ 7 or max 3 revisions.
-                </p>
-              </CardContent>
-            </Card>
-          </aside>
+          {/* Desktop Sidebar - hidden on mobile */}
+          {!isMobile && (
+            <aside className="hidden lg:block">
+              <SidebarContent
+                company={company}
+                setCompany={setCompany}
+                strategy={strategy}
+                setStrategy={setStrategy}
+                isLoading={isLoading}
+                handleGenerate={handleGenerate}
+                currentStep={currentStep}
+              />
+            </aside>
+          )}
 
           {/* Main Content */}
           <main className="space-y-6">
@@ -456,46 +636,89 @@ const Index = () => {
             )}
 
             {showResults && (
-              <div className="space-y-6 animate-slide-up">
+              <div className="space-y-4 sm:space-y-6 animate-slide-up print:animate-none">
                 {/* Results Header */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-semibold text-foreground">
-                      {swotData.company} Analysis
-                    </h2>
-                    <p className="text-muted-foreground">
-                      Strategic assessment completed
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
+                <div className="flex flex-col gap-3 sm:gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                    <div>
+                      <h2 className="text-xl sm:text-2xl font-semibold text-foreground">
+                        {swotData.company} Analysis
+                      </h2>
                       <p className="text-sm text-muted-foreground">
-                        Quality Score
-                      </p>
-                      <p className={`text-2xl font-bold ${getScoreColor(swotData.score)}`}>
-                        {swotData.score}/10
+                        Strategic assessment completed
                       </p>
                     </div>
-                    <Badge variant={scoreBadge.variant} className="gap-1.5">
-                      <scoreBadge.icon />
-                      {scoreBadge.label}
-                    </Badge>
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="text-left sm:text-right">
+                        <p className="text-xs sm:text-sm text-muted-foreground">
+                          Quality Score
+                        </p>
+                        <p className={`text-xl sm:text-2xl font-bold ${getScoreColor(swotData.score)}`}>
+                          {swotData.score}/10
+                        </p>
+                      </div>
+                      <Badge variant={scoreBadge.variant} className="gap-1.5 text-xs sm:text-sm">
+                        <scoreBadge.icon className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <span className="hidden sm:inline">{scoreBadge.label}</span>
+                        <span className="sm:hidden">{scoreBadge.label.split(' ')[0]}</span>
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Export Buttons */}
+                  <div className="flex flex-wrap gap-2 print:hidden">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={copyToClipboard}
+                      className="gap-1.5 text-xs sm:text-sm"
+                    >
+                      {copied ? (
+                        <Check className="h-3.5 w-3.5 text-success" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                      {copied ? "Copied!" : "Copy"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={downloadAsJson}
+                      className="gap-1.5 text-xs sm:text-sm"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Download JSON</span>
+                      <span className="sm:hidden">JSON</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={printAnalysis}
+                      className="gap-1.5 text-xs sm:text-sm"
+                    >
+                      <Printer className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Print / PDF</span>
+                      <span className="sm:hidden">Print</span>
+                    </Button>
                   </div>
                 </div>
 
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="analysis" className="gap-2">
-                      <BarChart3 />
-                      SWOT Analysis
+                  <TabsList className="grid w-full grid-cols-3 h-auto">
+                    <TabsTrigger value="analysis" className="gap-1.5 px-2 py-2 sm:px-4 text-xs sm:text-sm">
+                      <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">SWOT Analysis</span>
+                      <span className="sm:hidden">SWOT</span>
                     </TabsTrigger>
-                    <TabsTrigger value="quality" className="gap-2">
-                      <Target />
-                      Quality Evaluation
+                    <TabsTrigger value="quality" className="gap-1.5 px-2 py-2 sm:px-4 text-xs sm:text-sm">
+                      <Target className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Quality Evaluation</span>
+                      <span className="sm:hidden">Quality</span>
                     </TabsTrigger>
-                    <TabsTrigger value="details" className="gap-2">
-                      <FileText />
-                      Process Details
+                    <TabsTrigger value="details" className="gap-1.5 px-2 py-2 sm:px-4 text-xs sm:text-sm">
+                      <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Process Details</span>
+                      <span className="sm:hidden">Details</span>
                     </TabsTrigger>
                   </TabsList>
 
@@ -753,23 +976,26 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="border-t border-border bg-card mt-auto">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-6">
-              <span className="flex items-center gap-2">
-                <Brain />
-                AI-powered strategic analysis
+        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex flex-col items-center justify-between gap-3 text-xs sm:text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6">
+              <span className="flex items-center gap-1.5">
+                <Brain className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">AI-powered strategic analysis</span>
+                <span className="sm:hidden">AI Analysis</span>
               </span>
-              <span className="flex items-center gap-2">
-                <RefreshCw />
-                Automatic quality improvement
+              <span className="flex items-center gap-1.5">
+                <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Automatic quality improvement</span>
+                <span className="sm:hidden">Auto Quality</span>
               </span>
-              <span className="flex items-center gap-2">
-                <Target />
-                Data-driven insights
+              <span className="flex items-center gap-1.5">
+                <Target className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Data-driven insights</span>
+                <span className="sm:hidden">Insights</span>
               </span>
             </div>
-            <span>A2A Strategy Agent Demo</span>
+            <span className="text-center">A2A Strategy Agent Demo</span>
           </div>
         </div>
       </footer>
