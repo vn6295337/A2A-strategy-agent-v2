@@ -120,10 +120,14 @@ async def fetch_macro() -> dict:
 
 
 async def fetch_valuation(ticker: str) -> dict:
-    """Fetch valuation ratios for a ticker."""
-    _load_mcp_modules()
+    """Fetch valuation ratios for a ticker using direct import (no MCP SDK)."""
     try:
-        result = await _valuation_module.get_full_valuation_basket(ticker)
+        # Direct import from fetchers.py to avoid MCP SDK dependency issues
+        valuation_fetchers = load_module_from_path(
+            "valuation_fetchers",
+            MCP_SERVERS_PATH / "valuation-basket" / "fetchers.py"
+        )
+        result = await valuation_fetchers.get_full_valuation_basket(ticker)
         return result
     except Exception as e:
         logger.error(f"Valuation fetch error for {ticker}: {e}")
