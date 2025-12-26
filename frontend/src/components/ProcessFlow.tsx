@@ -43,7 +43,7 @@ const GROUP_PAD = 8      // fix #7: consistent group box padding
 // Row Y positions (fix #6: better vertical spacing)
 const ROW1_Y = 60
 const ROW2_Y = 150
-const ROW3_Y = 245
+const ROW3_Y = 210
 
 // Node X positions
 const NODES = {
@@ -439,8 +439,8 @@ export function ProcessFlow({
           {/* Fix #9: Cache bypass - demoted (strokeWidth=1, opacity=0.25, dashed) */}
           <ArrowPath
             d={`M ${NODES.cache.x} ${nodeTop(NODES.cache)}
-                L ${NODES.cache.x} 10
-                L ${NODES.output.x} 10
+                L ${NODES.cache.x} 25
+                L ${NODES.output.x} 25
                 L ${NODES.output.x} ${nodeTop(NODES.output)}`}
             status={bypassStatus}
             strokeWidth={1}
