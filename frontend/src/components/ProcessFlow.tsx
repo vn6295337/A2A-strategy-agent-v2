@@ -253,10 +253,10 @@ function MCPServer({
   label: string
   status: NodeStatus
 }) {
-  // D.7 opacity rules
+  // Opacity rules: full when executing, medium when completed, dim when idle
   const opacity = status === 'executing' ? 1 : status === 'completed' ? 0.6 : 0.3
+  const isExecuting = status === 'executing'
 
-  // Fix #8: resources strokeWidth = 1.2
   return (
     <g opacity={opacity}>
       <rect
@@ -266,10 +266,13 @@ function MCPServer({
         height={MCP_SIZE}
         rx={4}
         strokeWidth={1.2}
-        className="pf-node pf-node-idle"
+        className={cn(
+          'pf-node',
+          isExecuting ? 'pf-node-executing pf-pulse' : status === 'completed' ? 'pf-node-completed' : 'pf-node-idle'
+        )}
       />
 
-      {/* Fix #4: MCP_ICON_SIZE = 14 */}
+      {/* Show spinner when executing, server icon otherwise */}
       <foreignObject
         x={x - MCP_ICON_SIZE / 2}
         y={y - MCP_SIZE / 2 + 6}
@@ -277,7 +280,11 @@ function MCPServer({
         height={MCP_ICON_SIZE}
       >
         <div className="flex items-center justify-center w-full h-full">
-          <Server className="w-3.5 h-3.5 text-white" />
+          {isExecuting ? (
+            <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
+          ) : (
+            <Server className="w-3.5 h-3.5 text-white" />
+          )}
         </div>
       </foreignObject>
 
@@ -425,12 +432,25 @@ export function ProcessFlow({
       ? 'executing'
       : 'idle'
 
-  const a2aStatus = getNodeStatus('a2a_client', currentStep, completedSteps, cacheHit)
   const analyzerStatus = getNodeStatus('analyzer', currentStep, completedSteps, cacheHit)
   const criticStatus = getNodeStatus('critic', currentStep, completedSteps, cacheHit)
   const editorStatus = getNodeStatus('editor', currentStep, completedSteps, cacheHit)
   const outputStatus = getNodeStatus('output', currentStep, completedSteps, cacheHit)
   const researcherStatus = getNodeStatus('researcher', currentStep, completedSteps, cacheHit)
+
+  // A2A highlights when researcher is active (flow: Cache → A2A → Researcher)
+  const a2aStatus: NodeStatus = researcherStatus === 'executing'
+    ? 'executing'
+    : researcherStatus === 'completed'
+      ? 'completed'
+      : 'idle'
+
+  // Derive MCP status from researcher - all MCPs execute together
+  const derivedMcpStatus = (mcpId: string): NodeStatus => {
+    if (researcherStatus === 'executing') return 'executing'
+    if (researcherStatus === 'completed') return 'completed'
+    return mcpStatus[mcpId as keyof MCPStatus] || 'idle'
+  }
 
   const cacheState: CacheState =
     currentStep === 'cache' ? 'checking' :
@@ -602,7 +622,7 @@ export function ProcessFlow({
               x={mcp.x}
               y={ROW3_Y}
               label={mcp.label}
-              status={mcpStatus[mcp.id as keyof MCPStatus] || 'idle'}
+              status={derivedMcpStatus(mcp.id)}
             />
           ))}
         </svg>
