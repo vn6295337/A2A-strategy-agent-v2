@@ -109,14 +109,26 @@ const MCP_GROUP = {
 
 // === HELPER FUNCTIONS ===
 
+// Normalize step IDs for comparison (backend sends capitalized, frontend uses lowercase)
+function normalizeStep(step: string): string {
+  const lower = step.toLowerCase()
+  // Map backend names to frontend IDs
+  if (lower === 'analyst') return 'analyzer'
+  if (lower === 'completed') return 'output'
+  return lower
+}
+
 function getNodeStatus(
   stepId: string,
   currentStep: string,
   completedSteps: string[],
   cacheHit?: boolean
 ): NodeStatus {
-  if (completedSteps.includes(stepId)) return 'completed'
-  if (currentStep === stepId) return 'executing'
+  const normalizedCurrent = normalizeStep(currentStep)
+  const normalizedCompleted = completedSteps.map(normalizeStep)
+
+  if (normalizedCompleted.includes(stepId)) return 'completed'
+  if (normalizedCurrent === stepId) return 'executing'
   if (cacheHit && ['researcher', 'analyzer', 'critic', 'editor', 'a2a_client'].includes(stepId)) {
     return 'skipped'
   }
