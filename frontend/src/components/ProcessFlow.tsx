@@ -25,37 +25,42 @@ interface ProcessFlowProps {
   cacheHit?: boolean
 }
 
-// === CONSTANTS (E.8 - reduced sizes) ===
+// === CONSTANTS ===
 
+// Node sizing
 const NODE_SIZE = 44
-const MCP_SIZE = 38
+const ICON_SIZE = 14
+const MCP_SIZE = 36
+const MCP_ICON_SIZE = 14
 const LLM_WIDTH = 52
 const LLM_HEIGHT = 24
-const ICON_SIZE = 12
-const MCP_ICON_SIZE = 12
-const GAP = 80
 
-// Row Y positions
+// Spacing (fix #5: reduced from 90)
+const GAP = 72
+const CONNECTOR_PAD = 2  // fix #2: single source of truth
+const GROUP_PAD = 8      // fix #7: consistent group box padding
+
+// Row Y positions (fix #6: better vertical spacing)
 const ROW1_Y = 60
-const ROW2_Y = 140
-const ROW3_Y = 210
+const ROW2_Y = 150
+const ROW3_Y = 245
 
-// Node X positions (uniform gap)
+// Node X positions
 const NODES = {
-  input: { x: 45, y: ROW1_Y },
-  cache: { x: 45 + GAP, y: ROW1_Y },
-  a2a: { x: 45 + GAP * 2, y: ROW1_Y },
-  analyzer: { x: 45 + GAP * 3, y: ROW1_Y },
-  critic: { x: 45 + GAP * 4, y: ROW1_Y },
-  editor: { x: 45 + GAP * 5, y: ROW1_Y },
-  output: { x: 45 + GAP * 6, y: ROW1_Y },
-  exchange: { x: 45, y: ROW2_Y },
-  researcher: { x: 45 + GAP * 2, y: ROW3_Y },
+  input: { x: 40, y: ROW1_Y },
+  cache: { x: 40 + GAP, y: ROW1_Y },
+  a2a: { x: 40 + GAP * 2, y: ROW1_Y },
+  analyzer: { x: 40 + GAP * 3, y: ROW1_Y },
+  critic: { x: 40 + GAP * 4, y: ROW1_Y },
+  editor: { x: 40 + GAP * 5, y: ROW1_Y },
+  output: { x: 40 + GAP * 6, y: ROW1_Y },
+  exchange: { x: 40, y: ROW2_Y },
+  researcher: { x: 40 + GAP * 2, y: ROW3_Y },
 }
 
 // MCP Server positions
-const MCP_START_X = NODES.researcher.x + NODE_SIZE / 2 + 50
-const MCP_GAP = 48
+const MCP_START_X = NODES.researcher.x + NODE_SIZE / 2 + 40
+const MCP_GAP = 44
 const MCP_SERVERS = [
   { id: 'financials', label: 'Fin', x: MCP_START_X },
   { id: 'valuation', label: 'Val', x: MCP_START_X + MCP_GAP },
@@ -68,31 +73,31 @@ const MCP_SERVERS = [
 // LLM Provider positions
 const AGENTS_CENTER_X = (NODES.analyzer.x + NODES.editor.x) / 2
 const LLM_PROVIDERS = [
-  { id: 'groq', name: 'Groq', x: AGENTS_CENTER_X - 60 },
+  { id: 'groq', name: 'Groq', x: AGENTS_CENTER_X - 56 },
   { id: 'gemini', name: 'Gemini', x: AGENTS_CENTER_X },
-  { id: 'openrouter', name: 'OpenRouter', x: AGENTS_CENTER_X + 60 },
+  { id: 'openrouter', name: 'OpenRouter', x: AGENTS_CENTER_X + 56 },
 ]
 
-// Group box calculations
+// Group box calculations (fix #7: use GROUP_PAD)
 const AGENTS_GROUP = {
-  x: NODES.analyzer.x - NODE_SIZE / 2 - 8,
-  y: ROW1_Y - NODE_SIZE / 2 - 8,
-  width: NODES.editor.x - NODES.analyzer.x + NODE_SIZE + 16,
-  height: NODE_SIZE + 16,
+  x: NODES.analyzer.x - NODE_SIZE / 2 - GROUP_PAD,
+  y: ROW1_Y - NODE_SIZE / 2 - GROUP_PAD,
+  width: NODES.editor.x - NODES.analyzer.x + NODE_SIZE + GROUP_PAD * 2,
+  height: NODE_SIZE + GROUP_PAD * 2,
 }
 
 const LLM_GROUP = {
-  x: LLM_PROVIDERS[0].x - LLM_WIDTH / 2 - 8,
-  y: ROW2_Y - LLM_HEIGHT / 2 - 8,
-  width: LLM_PROVIDERS[2].x - LLM_PROVIDERS[0].x + LLM_WIDTH + 16,
-  height: LLM_HEIGHT + 16,
+  x: LLM_PROVIDERS[0].x - LLM_WIDTH / 2 - GROUP_PAD,
+  y: ROW2_Y - LLM_HEIGHT / 2 - GROUP_PAD,
+  width: LLM_PROVIDERS[2].x - LLM_PROVIDERS[0].x + LLM_WIDTH + GROUP_PAD * 2,
+  height: LLM_HEIGHT + GROUP_PAD * 2,
 }
 
 const MCP_GROUP = {
-  x: MCP_SERVERS[0].x - MCP_SIZE / 2 - 8,
-  y: ROW3_Y - MCP_SIZE / 2 - 8,
-  width: MCP_SERVERS[5].x - MCP_SERVERS[0].x + MCP_SIZE + 16,
-  height: MCP_SIZE + 16,
+  x: MCP_SERVERS[0].x - MCP_SIZE / 2 - GROUP_PAD,
+  y: ROW3_Y - MCP_SIZE / 2 - GROUP_PAD,
+  width: MCP_SERVERS[5].x - MCP_SERVERS[0].x + MCP_SIZE + GROUP_PAD * 2,
+  height: MCP_SIZE + GROUP_PAD * 2,
 }
 
 // === HELPER FUNCTIONS ===
@@ -111,7 +116,6 @@ function getNodeStatus(
   return 'idle'
 }
 
-// CSS class helpers
 function getNodeClass(status: NodeStatus, isAgent: boolean = false): string {
   const base = isAgent ? 'pf-node pf-agent' : 'pf-node'
   return `${base} pf-node-${status}`
@@ -133,17 +137,17 @@ function getTextClass(status: NodeStatus): string {
 // === SVG COMPONENTS ===
 
 function ArrowMarkers() {
+  // Fix #1: userSpaceOnUse with smaller 5x5 geometry
   return (
     <defs>
-      {/* Markers at size 8 (E.8) */}
-      <marker id="arrow-idle" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
-        <path d="M0,0 L0,6 L8,3 z" fill="var(--pf-connector-idle)" />
+      <marker id="arrow-idle" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto" markerUnits="userSpaceOnUse">
+        <path d="M0,0 L0,5 L5,2.5 z" fill="var(--pf-connector-idle)" />
       </marker>
-      <marker id="arrow-executing" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
-        <path d="M0,0 L0,6 L8,3 z" fill="var(--pf-connector-executing)" />
+      <marker id="arrow-executing" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto" markerUnits="userSpaceOnUse">
+        <path d="M0,0 L0,5 L5,2.5 z" fill="var(--pf-connector-executing)" />
       </marker>
-      <marker id="arrow-completed" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
-        <path d="M0,0 L0,6 L8,3 z" fill="var(--pf-connector-completed)" />
+      <marker id="arrow-completed" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto" markerUnits="userSpaceOnUse">
+        <path d="M0,0 L0,5 L5,2.5 z" fill="var(--pf-connector-completed)" />
       </marker>
     </defs>
   )
@@ -170,9 +174,10 @@ function SVGNode({
 }) {
   const nodeClass = cacheState ? getCacheClass(cacheState) : getNodeClass(status, isAgent)
   const isExecuting = status === 'executing' || cacheState === 'checking'
-
-  // F.10 - Only pulse when executing, no other animations
   const opacity = status === 'idle' && !cacheState ? 0.5 : status === 'skipped' ? 0.4 : 1
+
+  // Fix #8: stroke hierarchy - agents=2.5, infrastructure=2
+  const strokeWidth = isAgent ? 2.5 : 2
 
   return (
     <g opacity={opacity}>
@@ -182,31 +187,33 @@ function SVGNode({
         width={NODE_SIZE}
         height={NODE_SIZE}
         rx={isDiamond ? 4 : 8}
-        strokeWidth={isAgent ? 2.5 : 2}
+        strokeWidth={strokeWidth}
         className={cn(nodeClass, isExecuting && 'pf-pulse')}
         transform={isDiamond ? `rotate(45 ${x} ${y})` : undefined}
       />
 
+      {/* Fix #3: icon at y - NODE_SIZE/2 + 9 */}
       <foreignObject
         x={x - ICON_SIZE / 2}
-        y={y - NODE_SIZE / 2 + 8}
+        y={y - NODE_SIZE / 2 + 9}
         width={ICON_SIZE}
         height={ICON_SIZE}
       >
         <div className="flex items-center justify-center w-full h-full">
           {isExecuting ? (
-            <Loader2 className="w-3 h-3 text-white animate-spin" />
+            <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
           ) : (
-            <Icon className="w-3 h-3 text-white" />
+            <Icon className="w-3.5 h-3.5 text-white" />
           )}
         </div>
       </foreignObject>
 
+      {/* Fix #3: label at y + NODE_SIZE/2 - 7, text-[8px] */}
       <text
         x={x}
-        y={y + NODE_SIZE / 2 - 6}
+        y={y + NODE_SIZE / 2 - 7}
         textAnchor="middle"
-        className={cn('text-[6.5px] font-medium', getTextClass(status))}
+        className={cn('text-[8px] font-medium', getTextClass(status))}
       >
         {label}
       </text>
@@ -225,10 +232,10 @@ function MCPServer({
   label: string
   status: NodeStatus
 }) {
-  // D.7 - MCP opacity rules: executing=1, completed=0.6, idle=0.3
-  // F.10 - No glow on MCPs
+  // D.7 opacity rules
   const opacity = status === 'executing' ? 1 : status === 'completed' ? 0.6 : 0.3
 
+  // Fix #8: resources strokeWidth = 1.2
   return (
     <g opacity={opacity}>
       <rect
@@ -237,10 +244,11 @@ function MCPServer({
         width={MCP_SIZE}
         height={MCP_SIZE}
         rx={4}
-        strokeWidth={1}
+        strokeWidth={1.2}
         className="pf-node pf-node-idle"
       />
 
+      {/* Fix #4: MCP_ICON_SIZE = 14 */}
       <foreignObject
         x={x - MCP_ICON_SIZE / 2}
         y={y - MCP_SIZE / 2 + 6}
@@ -248,15 +256,16 @@ function MCPServer({
         height={MCP_ICON_SIZE}
       >
         <div className="flex items-center justify-center w-full h-full">
-          <Server className="w-3 h-3 text-white" />
+          <Server className="w-3.5 h-3.5 text-white" />
         </div>
       </foreignObject>
 
+      {/* Fix #4: text-[7px] */}
       <text
         x={x}
         y={y + MCP_SIZE / 2 - 5}
         textAnchor="middle"
-        className="text-[6px] font-medium pf-text-mcp"
+        className="text-[7px] font-medium pf-text-mcp"
       >
         {label}
       </text>
@@ -275,8 +284,6 @@ function LLMProvider({
   name: string
   isSelected: boolean
 }) {
-  // C.6 - Selected LLM: full opacity, others heavily faded
-  // F.10 - No glow on LLMs
   const opacity = isSelected ? 1 : 0.25
 
   return (
@@ -303,18 +310,7 @@ function LLMProvider({
   )
 }
 
-function GroupBox({
-  x,
-  y,
-  width,
-  height,
-}: {
-  x: number
-  y: number
-  width: number
-  height: number
-}) {
-  // G.11 - Dashed, low opacity (~0.35), no background fill
+function GroupBox({ x, y, width, height }: { x: number; y: number; width: number; height: number }) {
   return (
     <rect
       x={x}
@@ -337,7 +333,7 @@ function Arrow({
   x2,
   y2,
   status,
-  strokeWidth = 1.5,
+  strokeWidth = 1.4,  // Fix #8: default arrow stroke
 }: {
   x1: number
   y1: number
@@ -346,7 +342,6 @@ function Arrow({
   status: NodeStatus
   strokeWidth?: number
 }) {
-  // F.10 - No arrow animation
   return (
     <line
       x1={x1}
@@ -363,17 +358,23 @@ function Arrow({
 function ArrowPath({
   d,
   status,
-  strokeWidth = 1.5,
+  strokeWidth = 1.4,
+  opacity = 1,
+  strokeDasharray,
 }: {
   d: string
   status: NodeStatus
   strokeWidth?: number
+  opacity?: number
+  strokeDasharray?: string
 }) {
   return (
     <path
       d={d}
       strokeWidth={strokeWidth}
       fill="none"
+      opacity={opacity}
+      strokeDasharray={strokeDasharray}
       markerEnd={`url(#arrow-${status})`}
       className={getConnectorClass(status)}
     />
@@ -389,7 +390,6 @@ export function ProcessFlow({
   llmProvider = 'groq',
   cacheHit = false,
 }: ProcessFlowProps) {
-  // Calculate statuses
   const inputStatus = getNodeStatus('input', currentStep, completedSteps, cacheHit)
   const a2aStatus = getNodeStatus('a2a_client', currentStep, completedSteps, cacheHit)
   const analyzerStatus = getNodeStatus('analyzer', currentStep, completedSteps, cacheHit)
@@ -399,21 +399,17 @@ export function ProcessFlow({
   const researcherStatus = getNodeStatus('researcher', currentStep, completedSteps, cacheHit)
   const exchangeStatus = getNodeStatus('exchange_match', currentStep, completedSteps, cacheHit)
 
-  // Cache state
   const cacheState: CacheState =
     currentStep === 'cache' ? 'checking' :
     completedSteps.includes('cache') ? (cacheHit ? 'hit' : 'miss') :
     'idle'
 
-  // Connector status helper
   const conn = (from: NodeStatus, to: NodeStatus): NodeStatus =>
     from === 'completed' && to !== 'idle' ? 'completed' :
     from === 'executing' ? 'executing' : 'idle'
 
-  // Bypass connector status (for cache hit path)
   const bypassStatus: NodeStatus = cacheHit && completedSteps.includes('cache') ? 'completed' : 'idle'
 
-  // LLM status for the arrow from agents to LLM group
   const llmActive = ['analyzer', 'critic', 'editor'].some(s =>
     currentStep === s || completedSteps.includes(s)
   )
@@ -421,112 +417,120 @@ export function ProcessFlow({
     ? 'executing'
     : llmActive ? 'completed' : 'idle'
 
+  // Fix #2: Helper for connector endpoints
+  const nodeRight = (n: { x: number }) => n.x + NODE_SIZE / 2 + CONNECTOR_PAD
+  const nodeLeft = (n: { x: number }) => n.x - NODE_SIZE / 2 - CONNECTOR_PAD
+  const nodeBottom = (n: { y: number }) => n.y + NODE_SIZE / 2 + CONNECTOR_PAD
+  const nodeTop = (n: { y: number }) => n.y - NODE_SIZE / 2 - CONNECTOR_PAD
+
   return (
-    // H.12 - Hard-limit to 75% width
     <div className="flex">
       <div className="w-[75%] p-4 overflow-x-auto">
         <svg
-          viewBox="0 0 620 270"
+          viewBox="0 0 560 300"
           preserveAspectRatio="xMidYMid meet"
           className="w-full"
-          style={{ minHeight: '270px' }}
+          style={{ minHeight: '300px' }}
         >
           <ArrowMarkers />
 
-          {/* === CONNECTORS (B.3 - correct flow only) === */}
+          {/* === CONNECTORS === */}
 
-          {/* Cache bypass elbow (above Row 1) */}
+          {/* Fix #9: Cache bypass - demoted (strokeWidth=1, opacity=0.25, dashed) */}
           <ArrowPath
-            d={`M ${NODES.cache.x} ${NODES.cache.y - NODE_SIZE/2 - 3}
-                L ${NODES.cache.x} 12
-                L ${NODES.output.x} 12
-                L ${NODES.output.x} ${NODES.output.y - NODE_SIZE/2 - 3}`}
+            d={`M ${NODES.cache.x} ${nodeTop(NODES.cache)}
+                L ${NODES.cache.x} 10
+                L ${NODES.output.x} 10
+                L ${NODES.output.x} ${nodeTop(NODES.output)}`}
             status={bypassStatus}
+            strokeWidth={1}
+            opacity={0.25}
+            strokeDasharray="2 3"
           />
 
-          {/* Main flow: Input → Cache → A2A → Analyzer → Critic → Editor → Output */}
+          {/* Main flow: Input → Cache → A2A → [Agents] → Output */}
           <Arrow
-            x1={NODES.input.x + NODE_SIZE/2 + 2}
+            x1={nodeRight(NODES.input)}
             y1={ROW1_Y}
-            x2={NODES.cache.x - NODE_SIZE/2 - 10}
+            x2={nodeLeft(NODES.cache)}
             y2={ROW1_Y}
             status={conn(inputStatus, cacheState === 'idle' ? 'idle' : 'completed')}
           />
           <Arrow
-            x1={NODES.cache.x + NODE_SIZE/2 + 10}
+            x1={nodeRight(NODES.cache)}
             y1={ROW1_Y}
-            x2={NODES.a2a.x - NODE_SIZE/2 - 10}
+            x2={nodeLeft(NODES.a2a)}
             y2={ROW1_Y}
             status={cacheState === 'miss' ? conn('completed' as NodeStatus, a2aStatus) : 'idle'}
           />
           <Arrow
-            x1={NODES.a2a.x + NODE_SIZE/2 + 2}
+            x1={nodeRight(NODES.a2a)}
             y1={ROW1_Y}
-            x2={AGENTS_GROUP.x - 10}
+            x2={AGENTS_GROUP.x - CONNECTOR_PAD}
             y2={ROW1_Y}
             status={conn(a2aStatus, analyzerStatus)}
           />
           <Arrow
-            x1={NODES.analyzer.x + NODE_SIZE/2 + 2}
+            x1={nodeRight(NODES.analyzer)}
             y1={ROW1_Y}
-            x2={NODES.critic.x - NODE_SIZE/2 - 10}
+            x2={nodeLeft(NODES.critic)}
             y2={ROW1_Y}
             status={conn(analyzerStatus, criticStatus)}
           />
           <Arrow
-            x1={NODES.critic.x + NODE_SIZE/2 + 2}
+            x1={nodeRight(NODES.critic)}
             y1={ROW1_Y}
-            x2={NODES.editor.x - NODE_SIZE/2 - 10}
+            x2={nodeLeft(NODES.editor)}
             y2={ROW1_Y}
             status={conn(criticStatus, editorStatus)}
           />
           <Arrow
-            x1={AGENTS_GROUP.x + AGENTS_GROUP.width + 2}
+            x1={AGENTS_GROUP.x + AGENTS_GROUP.width + CONNECTOR_PAD}
             y1={ROW1_Y}
-            x2={NODES.output.x - NODE_SIZE/2 - 10}
+            x2={nodeLeft(NODES.output)}
             y2={ROW1_Y}
             status={conn(editorStatus, outputStatus)}
           />
 
-          {/* Input → Exchange (down arrow) */}
+          {/* Input → Exchange */}
           <Arrow
             x1={NODES.input.x}
-            y1={NODES.input.y + NODE_SIZE/2 + 2}
+            y1={nodeBottom(NODES.input)}
             x2={NODES.exchange.x}
-            y2={NODES.exchange.y - NODE_SIZE/2 - 10}
+            y2={nodeTop(NODES.exchange)}
             status={conn(inputStatus, exchangeStatus)}
           />
 
-          {/* Secondary flow: A2A → Researcher (E.9: strokeWidth 1.2) */}
+          {/* A2A → Researcher (Fix #8: strokeWidth 1.2) */}
           <Arrow
             x1={NODES.a2a.x}
-            y1={NODES.a2a.y + NODE_SIZE/2 + 2}
+            y1={nodeBottom(NODES.a2a)}
             x2={NODES.researcher.x}
-            y2={NODES.researcher.y - NODE_SIZE/2 - 10}
+            y2={nodeTop(NODES.researcher)}
             status={conn(a2aStatus, researcherStatus)}
             strokeWidth={1.2}
           />
 
-          {/* Researcher → MCP group (E.9: strokeWidth 2.0) */}
+          {/* Researcher → MCP group (Fix #8: strokeWidth 1.4) */}
           <Arrow
-            x1={NODES.researcher.x + NODE_SIZE/2 + 2}
+            x1={nodeRight(NODES.researcher)}
             y1={ROW3_Y}
-            x2={MCP_GROUP.x - 10}
+            x2={MCP_GROUP.x - CONNECTOR_PAD}
             y2={ROW3_Y}
             status={researcherStatus}
-            strokeWidth={2.0}
+            strokeWidth={1.4}
           />
 
-          {/* Agents → LLM group (C.5) */}
+          {/* Agents → LLM group */}
           <Arrow
             x1={AGENTS_CENTER_X}
-            y1={AGENTS_GROUP.y + AGENTS_GROUP.height + 2}
+            y1={AGENTS_GROUP.y + AGENTS_GROUP.height + CONNECTOR_PAD}
             x2={AGENTS_CENTER_X}
-            y2={LLM_GROUP.y - 10}
+            y2={LLM_GROUP.y - CONNECTOR_PAD}
             status={llmArrowStatus}
           />
 
-          {/* === GROUP BOXES (G.11) === */}
+          {/* === GROUP BOXES === */}
 
           <GroupBox {...AGENTS_GROUP} />
           <GroupBox {...LLM_GROUP} />
@@ -534,21 +538,20 @@ export function ProcessFlow({
 
           {/* === NODES === */}
 
-          {/* Row 1: Main flow - Tier-2 nodes */}
+          {/* Tier-2: Infrastructure */}
           <SVGNode x={NODES.input.x} y={NODES.input.y} icon={User} label="Input" status={inputStatus} />
           <SVGNode x={NODES.cache.x} y={NODES.cache.y} icon={Database} label="Cache" status={cacheState === 'idle' ? 'idle' : 'completed'} isDiamond cacheState={cacheState} />
           <SVGNode x={NODES.a2a.x} y={NODES.a2a.y} icon={Network} label="A2A" status={a2aStatus} />
           <SVGNode x={NODES.output.x} y={NODES.output.y} icon={FileOutput} label="Output" status={outputStatus} />
+          <SVGNode x={NODES.exchange.x} y={NODES.exchange.y} icon={GitBranch} label="Exchange" status={exchangeStatus} />
 
-          {/* Row 1: Agents group - Tier-1 agents (A.1, A.2) */}
+          {/* Tier-1: Agents (isAgent=true) */}
           <SVGNode x={NODES.analyzer.x} y={NODES.analyzer.y} icon={Brain} label="Analyzer" status={analyzerStatus} isAgent />
           <SVGNode x={NODES.critic.x} y={NODES.critic.y} icon={MessageSquare} label="Critic" status={criticStatus} isAgent />
           <SVGNode x={NODES.editor.x} y={NODES.editor.y} icon={Edit3} label="Editor" status={editorStatus} isAgent />
+          <SVGNode x={NODES.researcher.x} y={NODES.researcher.y} icon={Search} label="Research" status={researcherStatus} isAgent />
 
-          {/* Row 2: Exchange */}
-          <SVGNode x={NODES.exchange.x} y={NODES.exchange.y} icon={GitBranch} label="Exchange" status={exchangeStatus} />
-
-          {/* Row 2: LLM Providers - Tier-3 (C.6) */}
+          {/* Tier-3: LLM Providers */}
           {LLM_PROVIDERS.map((llm) => (
             <LLMProvider
               key={llm.id}
@@ -559,10 +562,7 @@ export function ProcessFlow({
             />
           ))}
 
-          {/* Row 3: Researcher - Tier-1 agent (A.1) */}
-          <SVGNode x={NODES.researcher.x} y={NODES.researcher.y} icon={Search} label="Research" status={researcherStatus} isAgent />
-
-          {/* Row 3: MCP Servers - Tier-3 (D.7) */}
+          {/* Tier-3: MCP Servers */}
           {MCP_SERVERS.map((mcp) => (
             <MCPServer
               key={mcp.id}
