@@ -348,6 +348,11 @@
   stroke-dasharray: 4 2;
 }
 
+/* A.1 - Tier-1 agents get stronger visual weight */
+.pf-agent {
+  stroke-width: 2.5;
+}
+
 /* Cache states */
 .pf-cache-checking {
   fill: var(--pf-executing-fill);
@@ -437,12 +442,7 @@
   fill: var(--pf-llm-text-completed);
 }
 
-/* Glow effect for active nodes */
-.pf-glow {
-  filter: drop-shadow(0 0 6px var(--pf-executing-stroke));
-}
-
-/* Pulse animation for SVG */
+/* F.10 - Only pulse animation for executing nodes, no glow */
 .pf-pulse {
   animation: pfPulse 1.5s ease-in-out infinite;
 }
