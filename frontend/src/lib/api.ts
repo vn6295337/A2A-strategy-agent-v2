@@ -1,6 +1,8 @@
 import { AnalysisResponse } from './types'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002'
+// In production (HF Spaces), API is served from same origin - use empty string
+// In development, use localhost:8002
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '' : 'http://localhost:8002')
 
 // Stock search types
 export interface StockResult {
