@@ -1,4 +1,3 @@
-import { cn } from "@/lib/utils"
 import {
   User,
   Database,
@@ -25,14 +24,49 @@ interface ProcessFlowProps {
   cacheHit?: boolean
 }
 
-const mcpServers = [
-  { id: 'financials', label: 'Fin' },
-  { id: 'valuation', label: 'Val' },
-  { id: 'volatility', label: 'Vol' },
-  { id: 'macro', label: 'Mac' },
-  { id: 'news', label: 'News' },
-  { id: 'sentiment', label: 'Sent' },
+// === CONSTANTS ===
+
+const NODE_SIZE = 44
+const MCP_SIZE = 40
+const LLM_WIDTH = 50
+const LLM_HEIGHT = 24
+
+// Row Y positions
+const ROW1_Y = 55
+const ROW2_Y = 135
+const ROW3_Y = 215
+
+// Node X positions
+const NODES = {
+  input: { x: 50, y: ROW1_Y },
+  cache: { x: 140, y: ROW1_Y },
+  a2a: { x: 230, y: ROW1_Y },
+  analyzer: { x: 360, y: ROW1_Y },
+  critic: { x: 460, y: ROW1_Y },
+  editor: { x: 560, y: ROW1_Y },
+  output: { x: 850, y: ROW1_Y },
+  exchange: { x: 50, y: ROW2_Y },
+  researcher: { x: 50, y: ROW3_Y },
+}
+
+// MCP Server positions
+const MCP_SERVERS = [
+  { id: 'financials', label: 'Fin', x: 180 },
+  { id: 'valuation', label: 'Val', x: 230 },
+  { id: 'volatility', label: 'Vol', x: 280 },
+  { id: 'macro', label: 'Mac', x: 330 },
+  { id: 'news', label: 'News', x: 380 },
+  { id: 'sentiment', label: 'Sent', x: 430 },
 ]
+
+// LLM Provider positions
+const LLM_PROVIDERS = [
+  { name: 'Groq', x: 360 },
+  { name: 'Gemini', x: 460 },
+  { name: 'OpenRouter', x: 560 },
+]
+
+// === HELPER FUNCTIONS ===
 
 function getNodeStatus(
   stepId: string,
@@ -48,130 +82,289 @@ function getNodeStatus(
   return 'idle'
 }
 
-const statusStyles = {
-  idle: 'bg-gray-700 border-gray-600',
-  executing: 'bg-emerald-600 border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] animate-pulse',
-  completed: 'bg-emerald-700 border-emerald-500',
-  failed: 'bg-red-600 border-red-400',
-  skipped: 'bg-gray-700 border-gray-600 opacity-40 border-dashed',
+function getStatusColor(status: NodeStatus): { fill: string; stroke: string } {
+  switch (status) {
+    case 'executing':
+      return { fill: '#059669', stroke: '#34D399' }
+    case 'completed':
+      return { fill: '#047857', stroke: '#10B981' }
+    case 'failed':
+      return { fill: '#DC2626', stroke: '#F87171' }
+    case 'skipped':
+      return { fill: '#374151', stroke: '#4B5563' }
+    default:
+      return { fill: '#374151', stroke: '#4B5563' }
+  }
 }
 
-const cacheStyles = {
-  idle: 'bg-gray-700 border-gray-600',
-  checking: 'bg-emerald-600 border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] animate-pulse',
-  hit: 'bg-emerald-700 border-emerald-500',
-  miss: 'bg-amber-600 border-amber-500',
+function getCacheColor(state: CacheState): { fill: string; stroke: string } {
+  switch (state) {
+    case 'checking':
+      return { fill: '#059669', stroke: '#34D399' }
+    case 'hit':
+      return { fill: '#047857', stroke: '#10B981' }
+    case 'miss':
+      return { fill: '#D97706', stroke: '#FBBF24' }
+    default:
+      return { fill: '#374151', stroke: '#4B5563' }
+  }
 }
 
-const connectorColor = (status: NodeStatus) =>
-  status === 'completed' ? 'bg-emerald-500' :
-  status === 'executing' ? 'bg-emerald-400' :
-  'bg-gray-600'
+function getConnectorColor(status: NodeStatus): string {
+  switch (status) {
+    case 'completed':
+      return '#10B981'
+    case 'executing':
+      return '#34D399'
+    default:
+      return '#4B5563'
+  }
+}
 
-// === COMPONENTS ===
+// === SVG COMPONENTS ===
 
-function ProcessNode({
+function SVGNode({
+  x,
+  y,
   icon: Icon,
   label,
   status,
   isDiamond = false,
   cacheState,
 }: {
+  x: number
+  y: number
   icon: React.ElementType
   label: string
   status: NodeStatus
   isDiamond?: boolean
   cacheState?: CacheState
 }) {
-  const showSpinner = status === 'executing' || cacheState === 'checking'
-
-  // Use cache-specific styles if cacheState is provided
-  const boxStyle = cacheState
-    ? cacheStyles[cacheState]
-    : statusStyles[status]
+  const colors = cacheState ? getCacheColor(cacheState) : getStatusColor(status)
+  const isActive = status === 'executing' || cacheState === 'checking'
+  const opacity = status === 'idle' && !cacheState ? 0.5 : status === 'skipped' ? 0.4 : 1
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      <div
-        className={cn(
-          'flex items-center justify-center border-2 transition-all duration-300 w-11 h-11',
-          isDiamond ? 'rotate-45 rounded-md' : 'rounded-lg',
-          boxStyle,
-          status === 'idle' && !cacheState && 'opacity-50'
-        )}
+    <g opacity={opacity}>
+      {/* Node container */}
+      <rect
+        x={x - NODE_SIZE / 2}
+        y={y - NODE_SIZE / 2}
+        width={NODE_SIZE}
+        height={NODE_SIZE}
+        rx={isDiamond ? 4 : 8}
+        fill={colors.fill}
+        stroke={colors.stroke}
+        strokeWidth={2}
+        strokeDasharray={status === 'skipped' ? '4 2' : undefined}
+        transform={isDiamond ? `rotate(45 ${x} ${y})` : undefined}
       >
-        <div className={cn(isDiamond && '-rotate-45')}>
-          {showSpinner ? (
+        {isActive && (
+          <animate
+            attributeName="opacity"
+            values="1;0.6;1"
+            dur="1.5s"
+            repeatCount="indefinite"
+          />
+        )}
+      </rect>
+
+      {/* Glow effect for active nodes */}
+      {isActive && (
+        <rect
+          x={x - NODE_SIZE / 2 - 4}
+          y={y - NODE_SIZE / 2 - 4}
+          width={NODE_SIZE + 8}
+          height={NODE_SIZE + 8}
+          rx={isDiamond ? 6 : 10}
+          fill="none"
+          stroke={colors.stroke}
+          strokeWidth={1}
+          opacity={0.3}
+          transform={isDiamond ? `rotate(45 ${x} ${y})` : undefined}
+        >
+          <animate
+            attributeName="opacity"
+            values="0.3;0.1;0.3"
+            dur="1.5s"
+            repeatCount="indefinite"
+          />
+        </rect>
+      )}
+
+      {/* Icon */}
+      <foreignObject
+        x={x - 10}
+        y={y - 10}
+        width={20}
+        height={20}
+      >
+        <div className="flex items-center justify-center w-full h-full">
+          {isActive ? (
             <Loader2 className="w-5 h-5 text-white animate-spin" />
           ) : (
             <Icon className="w-5 h-5 text-white" />
           )}
         </div>
-      </div>
-      <span className={cn(
-        'text-[10px] font-medium text-center leading-tight whitespace-nowrap',
-        status === 'idle' || status === 'skipped' ? 'text-gray-500' : 'text-gray-300'
-      )}>
+      </foreignObject>
+
+      {/* Label */}
+      <text
+        x={x}
+        y={y + NODE_SIZE / 2 + 14}
+        textAnchor="middle"
+        className="text-[10px] font-medium"
+        fill={status === 'idle' || status === 'skipped' ? '#6B7280' : '#D1D5DB'}
+      >
         {label}
-      </span>
-    </div>
+      </text>
+    </g>
   )
 }
 
-function HDash({ status }: { status: NodeStatus }) {
+function MCPServer({
+  x,
+  y,
+  label,
+  status,
+}: {
+  x: number
+  y: number
+  label: string
+  status: NodeStatus
+}) {
+  const colors = getStatusColor(status)
+  const isActive = status === 'executing'
+  const opacity = status === 'idle' ? 0.5 : 1
+
   return (
-    <div className="flex items-center justify-center w-8">
-      <div className={cn('w-full h-0.5', connectorColor(status))} />
-    </div>
+    <g opacity={opacity}>
+      <rect
+        x={x - MCP_SIZE / 2}
+        y={y - MCP_SIZE / 2}
+        width={MCP_SIZE}
+        height={MCP_SIZE}
+        rx={4}
+        fill={colors.fill}
+        stroke={colors.stroke}
+        strokeWidth={1}
+      >
+        {isActive && (
+          <animate
+            attributeName="opacity"
+            values="1;0.6;1"
+            dur="1.5s"
+            repeatCount="indefinite"
+          />
+        )}
+      </rect>
+
+      <foreignObject
+        x={x - 6}
+        y={y - 10}
+        width={12}
+        height={12}
+      >
+        <div className="flex items-center justify-center w-full h-full">
+          <Server className="w-3 h-3 text-white" />
+        </div>
+      </foreignObject>
+
+      <text
+        x={x}
+        y={y + 8}
+        textAnchor="middle"
+        className="text-[8px]"
+        fill="#9CA3AF"
+      >
+        {label}
+      </text>
+    </g>
   )
 }
 
-function VDash({ status, height = 'h-4' }: { status: NodeStatus; height?: string }) {
+function LLMProvider({
+  x,
+  y,
+  name,
+  status,
+}: {
+  x: number
+  y: number
+  name: string
+  status: NodeStatus
+}) {
+  const isActive = status === 'executing'
+  const isCompleted = status === 'completed'
+
+  const fill = isCompleted ? 'rgba(30, 58, 138, 0.5)' :
+               isActive ? 'rgba(30, 64, 175, 0.5)' :
+               'rgba(31, 41, 55, 1)'
+  const stroke = isCompleted ? '#2563EB' :
+                 isActive ? '#3B82F6' :
+                 '#374151'
+  const textColor = isCompleted ? '#93C5FD' :
+                    isActive ? '#BFDBFE' :
+                    '#6B7280'
+  const opacity = status === 'idle' ? 0.5 : 1
+
   return (
-    <div className={cn('flex justify-center w-11', height)}>
-      <div className={cn('w-0.5 h-full', connectorColor(status))} />
-    </div>
+    <g opacity={opacity}>
+      <rect
+        x={x - LLM_WIDTH / 2}
+        y={y - LLM_HEIGHT / 2}
+        width={LLM_WIDTH}
+        height={LLM_HEIGHT}
+        rx={4}
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={1}
+      >
+        {isActive && (
+          <animate
+            attributeName="opacity"
+            values="1;0.6;1"
+            dur="1.5s"
+            repeatCount="indefinite"
+          />
+        )}
+      </rect>
+
+      <text
+        x={x}
+        y={y + 3}
+        textAnchor="middle"
+        className="text-[9px] font-medium"
+        fill={textColor}
+      >
+        {name}
+      </text>
+    </g>
   )
 }
 
-function LLMProvider({ name, status }: { name: string; status: NodeStatus }) {
+function GroupBox({
+  x,
+  y,
+  width,
+  height,
+}: {
+  x: number
+  y: number
+  width: number
+  height: number
+}) {
   return (
-    <div
-      className={cn(
-        'flex items-center justify-center px-2 py-1.5 rounded border transition-all duration-300',
-        status === 'completed' ? 'bg-blue-900/50 border-blue-600' :
-        status === 'executing' ? 'bg-blue-800/50 border-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]' :
-        'bg-gray-800 border-gray-700 opacity-50'
-      )}
-    >
-      <span className={cn(
-        'text-[9px] font-medium',
-        status === 'completed' ? 'text-blue-300' :
-        status === 'executing' ? 'text-blue-200' :
-        'text-gray-500'
-      )}>{name}</span>
-    </div>
-  )
-}
-
-function MCPServer({ label, status }: { label: string; status: NodeStatus }) {
-  return (
-    <div
-      className={cn(
-        'flex flex-col items-center justify-center p-1 rounded border transition-all duration-300 w-10 h-10',
-        status === 'completed' ? 'bg-emerald-900/50 border-emerald-600' :
-        status === 'executing' ? 'bg-emerald-800/50 border-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]' :
-        'bg-gray-800 border-gray-700 opacity-50'
-      )}
-    >
-      <Server className={cn(
-        'w-3 h-3',
-        status === 'completed' ? 'text-emerald-400' :
-        status === 'executing' ? 'text-emerald-300' :
-        'text-gray-500'
-      )} />
-      <span className="text-[8px] text-gray-400 mt-0.5">{label}</span>
-    </div>
+    <rect
+      x={x}
+      y={y}
+      width={width}
+      height={height}
+      rx={8}
+      fill="rgba(31, 41, 55, 0.3)"
+      stroke="#374151"
+      strokeWidth={1}
+    />
   )
 }
 
@@ -183,7 +376,7 @@ export function ProcessFlow({
   mcpStatus,
   cacheHit = false,
 }: ProcessFlowProps) {
-  // Statuses
+  // Calculate statuses
   const inputStatus = getNodeStatus('input', currentStep, completedSteps, cacheHit)
   const a2aStatus = getNodeStatus('a2a_client', currentStep, completedSteps, cacheHit)
   const analyzerStatus = getNodeStatus('analyzer', currentStep, completedSteps, cacheHit)
@@ -193,13 +386,13 @@ export function ProcessFlow({
   const researcherStatus = getNodeStatus('researcher', currentStep, completedSteps, cacheHit)
   const exchangeStatus = getNodeStatus('exchange_match', currentStep, completedSteps, cacheHit)
 
-  // Cache state: idle, checking, hit, or miss
+  // Cache state
   const cacheState: CacheState =
     currentStep === 'cache' ? 'checking' :
     completedSteps.includes('cache') ? (cacheHit ? 'hit' : 'miss') :
     'idle'
 
-  // LLM status - active when any of analyzer/critic/editor is running
+  // LLM status
   const llmActive = ['analyzer', 'critic', 'editor'].some(s =>
     currentStep === s || completedSteps.includes(s)
   )
@@ -207,6 +400,7 @@ export function ProcessFlow({
     ? 'executing'
     : llmActive ? 'completed' : 'idle'
 
+  // Connector status helper
   const conn = (from: NodeStatus, to: NodeStatus): NodeStatus =>
     from === 'completed' && to !== 'idle' ? 'completed' :
     from === 'executing' ? 'executing' : 'idle'
@@ -216,134 +410,181 @@ export function ProcessFlow({
 
   return (
     <div className="w-full p-4 overflow-x-auto">
-      <div className="min-w-[900px] relative">
+      <svg
+        viewBox="0 0 900 280"
+        preserveAspectRatio="xMidYMid meet"
+        className="w-full min-w-[900px]"
+        style={{ minHeight: '280px' }}
+      >
+        {/* === CONNECTORS (rendered first, behind nodes) === */}
 
         {/* Cache bypass elbow (above Row 1) */}
-        <div className="absolute top-0 left-0 right-0 h-6 pointer-events-none">
-          {/* Horizontal line at top */}
-          <div
-            className={cn(
-              'absolute h-0.5 transition-all duration-300',
-              bypassStatus === 'completed' ? 'bg-emerald-500' : 'bg-gray-700'
-            )}
-            style={{ left: '85px', right: '30px', top: '2px' }}
-          />
-          {/* Left vertical (from cache up) */}
-          <div
-            className={cn(
-              'absolute w-0.5 transition-all duration-300',
-              bypassStatus === 'completed' ? 'bg-emerald-500' : 'bg-gray-700'
-            )}
-            style={{ left: '85px', top: '2px', height: '20px' }}
-          />
-          {/* Right vertical (down to output) */}
-          <div
-            className={cn(
-              'absolute w-0.5 transition-all duration-300',
-              bypassStatus === 'completed' ? 'bg-emerald-500' : 'bg-gray-700'
-            )}
-            style={{ right: '30px', top: '2px', height: '20px' }}
-          />
-        </div>
+        <path
+          d={`M ${NODES.cache.x} ${NODES.cache.y - NODE_SIZE/2 - 5}
+              L ${NODES.cache.x} 15
+              L ${NODES.output.x} 15
+              L ${NODES.output.x} ${NODES.output.y - NODE_SIZE/2 - 5}`}
+          stroke={getConnectorColor(bypassStatus)}
+          strokeWidth={2}
+          fill="none"
+        />
 
-        {/* Row 1: Main flow */}
-        <div className="flex items-start justify-between pt-6">
-          <ProcessNode icon={User} label="User Input" status={inputStatus} />
-          <HDash status={conn(inputStatus, cacheState === 'idle' ? 'idle' : 'completed')} />
-          <ProcessNode icon={Database} label="Cache" status={cacheState === 'idle' ? 'idle' : 'completed'} isDiamond cacheState={cacheState} />
-          <HDash status={cacheState === 'miss' ? conn('completed' as NodeStatus, a2aStatus) : 'idle'} />
-          <ProcessNode icon={Network} label="A2A Client" status={a2aStatus} />
-          <HDash status={conn(a2aStatus, analyzerStatus)} />
+        {/* Row 1: Horizontal connectors */}
+        <line
+          x1={NODES.input.x + NODE_SIZE/2 + 2}
+          y1={ROW1_Y}
+          x2={NODES.cache.x - NODE_SIZE/2 - 8}
+          y2={ROW1_Y}
+          stroke={getConnectorColor(conn(inputStatus, cacheState === 'idle' ? 'idle' : 'completed'))}
+          strokeWidth={2}
+        />
+        <line
+          x1={NODES.cache.x + NODE_SIZE/2 + 8}
+          y1={ROW1_Y}
+          x2={NODES.a2a.x - NODE_SIZE/2 - 2}
+          y2={ROW1_Y}
+          stroke={getConnectorColor(cacheState === 'miss' ? conn('completed' as NodeStatus, a2aStatus) : 'idle')}
+          strokeWidth={2}
+        />
+        <line
+          x1={NODES.a2a.x + NODE_SIZE/2 + 2}
+          y1={ROW1_Y}
+          x2={NODES.analyzer.x - NODE_SIZE/2 - 10}
+          y2={ROW1_Y}
+          stroke={getConnectorColor(conn(a2aStatus, analyzerStatus))}
+          strokeWidth={2}
+        />
+        <line
+          x1={NODES.analyzer.x + NODE_SIZE/2 + 2}
+          y1={ROW1_Y}
+          x2={NODES.critic.x - NODE_SIZE/2 - 2}
+          y2={ROW1_Y}
+          stroke={getConnectorColor(conn(analyzerStatus, criticStatus))}
+          strokeWidth={2}
+        />
+        <line
+          x1={NODES.critic.x + NODE_SIZE/2 + 2}
+          y1={ROW1_Y}
+          x2={NODES.editor.x - NODE_SIZE/2 - 2}
+          y2={ROW1_Y}
+          stroke={getConnectorColor(conn(criticStatus, editorStatus))}
+          strokeWidth={2}
+        />
+        <line
+          x1={NODES.editor.x + NODE_SIZE/2 + 10}
+          y1={ROW1_Y}
+          x2={NODES.output.x - NODE_SIZE/2 - 2}
+          y2={ROW1_Y}
+          stroke={getConnectorColor(conn(editorStatus, outputStatus))}
+          strokeWidth={2}
+        />
 
-          {/* Grouped: Analyzer, Critic, Editor */}
-          <div className="flex gap-0.5 p-1 border border-gray-700 rounded-lg bg-gray-800/30">
-            <ProcessNode icon={Brain} label="Analyzer" status={analyzerStatus} />
-            <HDash status={conn(analyzerStatus, criticStatus)} />
-            <ProcessNode icon={MessageSquare} label="Critic" status={criticStatus} />
-            <HDash status={conn(criticStatus, editorStatus)} />
-            <ProcessNode icon={Edit3} label="Editor" status={editorStatus} />
-          </div>
-
-          <HDash status={conn(editorStatus, outputStatus)} />
-          <ProcessNode icon={FileOutput} label="Output" status={outputStatus} />
-        </div>
-
-        {/* Row 2: Exchange + LLM Providers */}
-        <div className="flex items-start mt-1">
-          {/* Exchange under User Input */}
-          <div className="flex flex-col items-center" style={{ width: '44px' }}>
-            <VDash status={conn(inputStatus, exchangeStatus)} />
-            <ProcessNode icon={GitBranch} label="Exchange" status={exchangeStatus} />
-          </div>
-
-          {/* Spacer */}
-          <div className="flex-1" />
-
-          {/* Grouped: LLM Providers under agents */}
-          <div className="flex gap-0.5 p-1 border border-gray-700 rounded-lg bg-gray-800/30">
-            <div className="flex flex-col items-center gap-1">
-              <VDash status={llmStatus} height="h-3" />
-              <LLMProvider name="Groq" status={llmStatus} />
-            </div>
-            <div className="w-8" /> {/* spacer matching HDash */}
-            <div className="flex flex-col items-center gap-1">
-              <VDash status={llmStatus} height="h-3" />
-              <LLMProvider name="Gemini" status={llmStatus} />
-            </div>
-            <div className="w-8" /> {/* spacer matching HDash */}
-            <div className="flex flex-col items-center gap-1">
-              <VDash status={llmStatus} height="h-3" />
-              <LLMProvider name="OpenRouter" status={llmStatus} />
-            </div>
-          </div>
-
-          {/* Spacer for Output column */}
-          <div style={{ width: '80px' }} />
-        </div>
-
-        {/* Row 3: Researcher + MCP Servers */}
-        <div className="flex items-start mt-3">
-          {/* Researcher in first column */}
-          <ProcessNode icon={Search} label="Researcher" status={researcherStatus} />
-
-          <HDash status={researcherStatus} />
-
-          {/* Grouped: MCP Servers */}
-          <div className="flex gap-1 p-1.5 border border-gray-700 rounded-lg bg-gray-800/30">
-            {mcpServers.map((s) => (
-              <MCPServer
-                key={s.id}
-                label={s.label}
-                status={mcpStatus[s.id as keyof MCPStatus] || 'idle'}
-              />
-            ))}
-          </div>
-        </div>
+        {/* Input to Exchange vertical connector */}
+        <line
+          x1={NODES.input.x}
+          y1={NODES.input.y + NODE_SIZE/2 + 2}
+          x2={NODES.exchange.x}
+          y2={NODES.exchange.y - NODE_SIZE/2 - 2}
+          stroke={getConnectorColor(conn(inputStatus, exchangeStatus))}
+          strokeWidth={2}
+        />
 
         {/* A2A to Researcher elbow connector */}
-        <div className="absolute pointer-events-none" style={{ top: '90px', left: '195px' }}>
-          {/* Vertical down from A2A */}
-          <div
-            className={cn(
-              'absolute w-0.5 transition-all duration-300',
-              conn(a2aStatus, researcherStatus) === 'completed' ? 'bg-emerald-500' :
-              conn(a2aStatus, researcherStatus) === 'executing' ? 'bg-emerald-400' :
-              'bg-gray-600'
-            )}
-            style={{ left: '0', top: '0', height: '85px' }}
+        <path
+          d={`M ${NODES.a2a.x} ${NODES.a2a.y + NODE_SIZE/2 + 2}
+              L ${NODES.a2a.x} ${ROW3_Y}
+              L ${NODES.researcher.x + NODE_SIZE/2 + 2} ${ROW3_Y}`}
+          stroke={getConnectorColor(conn(a2aStatus, researcherStatus))}
+          strokeWidth={2}
+          fill="none"
+        />
+
+        {/* Researcher to MCP Servers connector */}
+        <line
+          x1={NODES.researcher.x + NODE_SIZE/2 + 2}
+          y1={ROW3_Y}
+          x2={MCP_SERVERS[0].x - MCP_SIZE/2 - 10}
+          y2={ROW3_Y}
+          stroke={getConnectorColor(researcherStatus)}
+          strokeWidth={2}
+        />
+
+        {/* Vertical connectors from Agents to LLMs */}
+        {LLM_PROVIDERS.map((llm, i) => (
+          <line
+            key={llm.name}
+            x1={llm.x}
+            y1={ROW1_Y + NODE_SIZE/2 + 8}
+            x2={llm.x}
+            y2={ROW2_Y - LLM_HEIGHT/2 - 2}
+            stroke={getConnectorColor(llmStatus)}
+            strokeWidth={2}
           />
-          {/* Horizontal left to Researcher */}
-          <div
-            className={cn(
-              'absolute h-0.5 transition-all duration-300',
-              conn(a2aStatus, researcherStatus) === 'completed' ? 'bg-emerald-500' :
-              conn(a2aStatus, researcherStatus) === 'executing' ? 'bg-emerald-400' :
-              'bg-gray-600'
-            )}
-            style={{ left: '-173px', top: '85px', width: '173px' }}
+        ))}
+
+        {/* === GROUP BOXES === */}
+
+        {/* Agents group box */}
+        <GroupBox
+          x={NODES.analyzer.x - NODE_SIZE/2 - 8}
+          y={ROW1_Y - NODE_SIZE/2 - 12}
+          width={NODES.editor.x - NODES.analyzer.x + NODE_SIZE + 16}
+          height={NODE_SIZE + 35}
+        />
+
+        {/* LLM Providers group box */}
+        <GroupBox
+          x={LLM_PROVIDERS[0].x - LLM_WIDTH/2 - 8}
+          y={ROW2_Y - LLM_HEIGHT/2 - 8}
+          width={LLM_PROVIDERS[2].x - LLM_PROVIDERS[0].x + LLM_WIDTH + 16}
+          height={LLM_HEIGHT + 16}
+        />
+
+        {/* MCP Servers group box */}
+        <GroupBox
+          x={MCP_SERVERS[0].x - MCP_SIZE/2 - 8}
+          y={ROW3_Y - MCP_SIZE/2 - 8}
+          width={MCP_SERVERS[5].x - MCP_SERVERS[0].x + MCP_SIZE + 16}
+          height={MCP_SIZE + 16}
+        />
+
+        {/* === NODES === */}
+
+        {/* Row 1: Main flow */}
+        <SVGNode x={NODES.input.x} y={NODES.input.y} icon={User} label="User Input" status={inputStatus} />
+        <SVGNode x={NODES.cache.x} y={NODES.cache.y} icon={Database} label="Cache" status={cacheState === 'idle' ? 'idle' : 'completed'} isDiamond cacheState={cacheState} />
+        <SVGNode x={NODES.a2a.x} y={NODES.a2a.y} icon={Network} label="A2A Client" status={a2aStatus} />
+        <SVGNode x={NODES.analyzer.x} y={NODES.analyzer.y} icon={Brain} label="Analyzer" status={analyzerStatus} />
+        <SVGNode x={NODES.critic.x} y={NODES.critic.y} icon={MessageSquare} label="Critic" status={criticStatus} />
+        <SVGNode x={NODES.editor.x} y={NODES.editor.y} icon={Edit3} label="Editor" status={editorStatus} />
+        <SVGNode x={NODES.output.x} y={NODES.output.y} icon={FileOutput} label="Output" status={outputStatus} />
+
+        {/* Row 2: Exchange + LLM Providers */}
+        <SVGNode x={NODES.exchange.x} y={NODES.exchange.y} icon={GitBranch} label="Exchange" status={exchangeStatus} />
+
+        {LLM_PROVIDERS.map((llm) => (
+          <LLMProvider
+            key={llm.name}
+            x={llm.x}
+            y={ROW2_Y}
+            name={llm.name}
+            status={llmStatus}
           />
-        </div>
-      </div>
+        ))}
+
+        {/* Row 3: Researcher + MCP Servers */}
+        <SVGNode x={NODES.researcher.x} y={NODES.researcher.y} icon={Search} label="Researcher" status={researcherStatus} />
+
+        {MCP_SERVERS.map((mcp) => (
+          <MCPServer
+            key={mcp.id}
+            x={mcp.x}
+            y={ROW3_Y}
+            label={mcp.label}
+            status={mcpStatus[mcp.id as keyof MCPStatus] || 'idle'}
+          />
+        ))}
+      </svg>
     </div>
   )
 }
