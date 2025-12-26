@@ -1,43 +1,13 @@
 # Dockerfile for HF Spaces (Docker SDK)
-# Builds React frontend and serves via FastAPI
+# Uses pre-built frontend from static/ directory
 
 FROM python:3.11-slim
-
-# Install Node.js for frontend build
-RUN apt-get update && apt-get install -y \
-    curl \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # Copy Python requirements and install
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy frontend package files first for better caching
-COPY frontend/package.json frontend/package-lock.json ./frontend/
-WORKDIR /app/frontend
-
-# Skip Playwright browser downloads
-ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-
-# Install dependencies
-RUN npm ci
-
-# Copy rest of frontend source
-COPY frontend/ ./
-
-# Build the frontend
-RUN npm run build
-
-# Verify build succeeded
-RUN ls -la dist/ && ls -la dist/assets/
-
-# Back to app root
-WORKDIR /app
 
 # Copy application code
 COPY api/ ./api/
@@ -47,9 +17,11 @@ COPY mcp-servers/ ./mcp-servers/
 COPY data/ ./data/
 COPY .env.example ./.env
 
-# Create static directory and copy built frontend
-RUN mkdir -p /app/static
-RUN cp -r /app/frontend/dist/* /app/static/
+# Copy pre-built frontend (built locally and committed)
+COPY static/ ./static/
+
+# Verify static files exist
+RUN ls -la /app/static/ && ls -la /app/static/assets/
 
 # Expose port (HF Spaces uses 7860)
 EXPOSE 7860
