@@ -23,6 +23,7 @@ interface ProcessFlowProps {
   mcpStatus: MCPStatus
   llmProvider?: string
   cacheHit?: boolean
+  stockSelected?: boolean
 }
 
 // === CONSTANTS ===
@@ -408,6 +409,7 @@ export function ProcessFlow({
   mcpStatus,
   llmProvider = 'groq',
   cacheHit = false,
+  stockSelected = false,
 }: ProcessFlowProps) {
   const inputStatus = getNodeStatus('input', currentStep, completedSteps, cacheHit)
   const a2aStatus = getNodeStatus('a2a_client', currentStep, completedSteps, cacheHit)
@@ -416,7 +418,8 @@ export function ProcessFlow({
   const editorStatus = getNodeStatus('editor', currentStep, completedSteps, cacheHit)
   const outputStatus = getNodeStatus('output', currentStep, completedSteps, cacheHit)
   const researcherStatus = getNodeStatus('researcher', currentStep, completedSteps, cacheHit)
-  const exchangeStatus = getNodeStatus('exchange_match', currentStep, completedSteps, cacheHit)
+  // Exchange is completed when stock is selected
+  const exchangeStatus: NodeStatus = stockSelected ? 'completed' : 'idle'
 
   const cacheState: CacheState =
     currentStep === 'cache' ? 'checking' :
