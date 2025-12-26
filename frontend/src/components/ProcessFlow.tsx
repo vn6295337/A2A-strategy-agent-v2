@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils"
 import {
   User,
   Database,
@@ -26,45 +27,72 @@ interface ProcessFlowProps {
 
 // === CONSTANTS ===
 
-const NODE_SIZE = 44
-const MCP_SIZE = 40
-const LLM_WIDTH = 50
-const LLM_HEIGHT = 24
+const NODE_SIZE = 52
+const MCP_SIZE = 48
+const LLM_WIDTH = 56
+const LLM_HEIGHT = 28
+const ICON_SIZE = 14
+const MCP_ICON_SIZE = 16
+const GAP = 90
 
-// Row Y positions
-const ROW1_Y = 55
-const ROW2_Y = 135
-const ROW3_Y = 215
+// Row Y positions (increased gap for bypass path)
+const ROW1_Y = 70
+const ROW2_Y = 160
+const ROW3_Y = 250
 
-// Node X positions
+// Node X positions (uniform 90px gap)
 const NODES = {
   input: { x: 50, y: ROW1_Y },
-  cache: { x: 140, y: ROW1_Y },
-  a2a: { x: 230, y: ROW1_Y },
-  analyzer: { x: 360, y: ROW1_Y },
-  critic: { x: 460, y: ROW1_Y },
-  editor: { x: 560, y: ROW1_Y },
-  output: { x: 850, y: ROW1_Y },
+  cache: { x: 50 + GAP, y: ROW1_Y },           // 140
+  a2a: { x: 50 + GAP * 2, y: ROW1_Y },         // 230
+  analyzer: { x: 50 + GAP * 3, y: ROW1_Y },    // 320
+  critic: { x: 50 + GAP * 4, y: ROW1_Y },      // 410
+  editor: { x: 50 + GAP * 5, y: ROW1_Y },      // 500
+  output: { x: 50 + GAP * 6, y: ROW1_Y },      // 590
   exchange: { x: 50, y: ROW2_Y },
-  researcher: { x: 50, y: ROW3_Y },
+  researcher: { x: 50 + GAP * 2, y: ROW3_Y },  // Below A2A
 }
 
-// MCP Server positions
+// MCP Server positions (start after researcher)
+const MCP_START_X = NODES.researcher.x + NODE_SIZE / 2 + 60
 const MCP_SERVERS = [
-  { id: 'financials', label: 'Fin', x: 180 },
-  { id: 'valuation', label: 'Val', x: 230 },
-  { id: 'volatility', label: 'Vol', x: 280 },
-  { id: 'macro', label: 'Mac', x: 330 },
-  { id: 'news', label: 'News', x: 380 },
-  { id: 'sentiment', label: 'Sent', x: 430 },
+  { id: 'financials', label: 'Fin', x: MCP_START_X },
+  { id: 'valuation', label: 'Val', x: MCP_START_X + 55 },
+  { id: 'volatility', label: 'Vol', x: MCP_START_X + 110 },
+  { id: 'macro', label: 'Mac', x: MCP_START_X + 165 },
+  { id: 'news', label: 'News', x: MCP_START_X + 220 },
+  { id: 'sentiment', label: 'Sent', x: MCP_START_X + 275 },
 ]
 
-// LLM Provider positions
+// LLM Provider positions (centered under agents group)
+const AGENTS_CENTER_X = (NODES.analyzer.x + NODES.editor.x) / 2
 const LLM_PROVIDERS = [
-  { name: 'Groq', x: 360 },
-  { name: 'Gemini', x: 460 },
-  { name: 'OpenRouter', x: 560 },
+  { name: 'Groq', x: AGENTS_CENTER_X - 70 },
+  { name: 'Gemini', x: AGENTS_CENTER_X },
+  { name: 'OpenRouter', x: AGENTS_CENTER_X + 70 },
 ]
+
+// Group box calculations
+const AGENTS_GROUP = {
+  x: NODES.analyzer.x - NODE_SIZE / 2 - 10,
+  y: ROW1_Y - NODE_SIZE / 2 - 10,
+  width: NODES.editor.x - NODES.analyzer.x + NODE_SIZE + 20,
+  height: NODE_SIZE + 20,
+}
+
+const LLM_GROUP = {
+  x: LLM_PROVIDERS[0].x - LLM_WIDTH / 2 - 10,
+  y: ROW2_Y - LLM_HEIGHT / 2 - 10,
+  width: LLM_PROVIDERS[2].x - LLM_PROVIDERS[0].x + LLM_WIDTH + 20,
+  height: LLM_HEIGHT + 20,
+}
+
+const MCP_GROUP = {
+  x: MCP_SERVERS[0].x - MCP_SIZE / 2 - 10,
+  y: ROW3_Y - MCP_SIZE / 2 - 10,
+  width: MCP_SERVERS[5].x - MCP_SERVERS[0].x + MCP_SIZE + 20,
+  height: MCP_SIZE + 20,
+}
 
 // === HELPER FUNCTIONS ===
 
@@ -82,46 +110,109 @@ function getNodeStatus(
   return 'idle'
 }
 
-function getStatusColor(status: NodeStatus): { fill: string; stroke: string } {
-  switch (status) {
-    case 'executing':
-      return { fill: '#059669', stroke: '#34D399' }
-    case 'completed':
-      return { fill: '#047857', stroke: '#10B981' }
-    case 'failed':
-      return { fill: '#DC2626', stroke: '#F87171' }
-    case 'skipped':
-      return { fill: '#374151', stroke: '#4B5563' }
-    default:
-      return { fill: '#374151', stroke: '#4B5563' }
-  }
+// CSS class helpers
+function getNodeClass(status: NodeStatus): string {
+  return `pf-node pf-node-${status}`
 }
 
-function getCacheColor(state: CacheState): { fill: string; stroke: string } {
-  switch (state) {
-    case 'checking':
-      return { fill: '#059669', stroke: '#34D399' }
-    case 'hit':
-      return { fill: '#047857', stroke: '#10B981' }
-    case 'miss':
-      return { fill: '#D97706', stroke: '#FBBF24' }
-    default:
-      return { fill: '#374151', stroke: '#4B5563' }
-  }
+function getCacheClass(state: CacheState): string {
+  if (state === 'idle') return 'pf-node pf-node-idle'
+  return `pf-node pf-cache-${state}`
 }
 
-function getConnectorColor(status: NodeStatus): string {
-  switch (status) {
-    case 'completed':
-      return '#10B981'
-    case 'executing':
-      return '#34D399'
-    default:
-      return '#4B5563'
-  }
+function getConnectorClass(status: NodeStatus): string {
+  return `pf-connector pf-connector-${status}`
+}
+
+function getLLMClass(status: NodeStatus): string {
+  return `pf-llm pf-llm-${status}`
+}
+
+function getTextClass(status: NodeStatus): string {
+  return status === 'idle' || status === 'skipped' ? 'pf-text-idle' : 'pf-text-active'
+}
+
+function getLLMTextClass(status: NodeStatus): string {
+  return `pf-llm-text-${status}`
 }
 
 // === SVG COMPONENTS ===
+
+function ArrowMarkers() {
+  return (
+    <defs>
+      {/* Single arrow (for → and ↓) */}
+      <marker
+        id="arrow-idle"
+        markerWidth="10"
+        markerHeight="10"
+        refX="9"
+        refY="3"
+        orient="auto"
+        markerUnits="strokeWidth"
+      >
+        <path d="M0,0 L0,6 L9,3 z" fill="var(--pf-connector-idle)" />
+      </marker>
+      <marker
+        id="arrow-executing"
+        markerWidth="10"
+        markerHeight="10"
+        refX="9"
+        refY="3"
+        orient="auto"
+        markerUnits="strokeWidth"
+      >
+        <path d="M0,0 L0,6 L9,3 z" fill="var(--pf-connector-executing)" />
+      </marker>
+      <marker
+        id="arrow-completed"
+        markerWidth="10"
+        markerHeight="10"
+        refX="9"
+        refY="3"
+        orient="auto"
+        markerUnits="strokeWidth"
+      >
+        <path d="M0,0 L0,6 L9,3 z" fill="var(--pf-connector-completed)" />
+      </marker>
+
+      {/* Reverse arrows (for ↔ start) */}
+      <marker
+        id="arrow-start-idle"
+        markerWidth="10"
+        markerHeight="10"
+        refX="1"
+        refY="3"
+        orient="auto"
+        markerUnits="strokeWidth"
+      >
+        <path d="M9,0 L9,6 L0,3 z" fill="var(--pf-connector-idle)" />
+      </marker>
+      <marker
+        id="arrow-start-executing"
+        markerWidth="10"
+        markerHeight="10"
+        refX="1"
+        refY="3"
+        orient="auto"
+        markerUnits="strokeWidth"
+      >
+        <path d="M9,0 L9,6 L0,3 z" fill="var(--pf-connector-executing)" />
+      </marker>
+      <marker
+        id="arrow-start-completed"
+        markerWidth="10"
+        markerHeight="10"
+        refX="1"
+        refY="3"
+        orient="auto"
+        markerUnits="strokeWidth"
+      >
+        <path d="M9,0 L9,6 L0,3 z" fill="var(--pf-connector-completed)" />
+      </marker>
+    </defs>
+  )
+}
 
 function SVGNode({
   x,
@@ -140,12 +231,12 @@ function SVGNode({
   isDiamond?: boolean
   cacheState?: CacheState
 }) {
-  const colors = cacheState ? getCacheColor(cacheState) : getStatusColor(status)
+  const nodeClass = cacheState ? getCacheClass(cacheState) : getNodeClass(status)
   const isActive = status === 'executing' || cacheState === 'checking'
   const opacity = status === 'idle' && !cacheState ? 0.5 : status === 'skipped' ? 0.4 : 1
 
   return (
-    <g opacity={opacity}>
+    <g opacity={opacity} className={isActive ? 'pf-glow' : ''}>
       {/* Node container */}
       <rect
         x={x - NODE_SIZE / 2}
@@ -153,68 +244,33 @@ function SVGNode({
         width={NODE_SIZE}
         height={NODE_SIZE}
         rx={isDiamond ? 4 : 8}
-        fill={colors.fill}
-        stroke={colors.stroke}
         strokeWidth={2}
-        strokeDasharray={status === 'skipped' ? '4 2' : undefined}
+        className={cn(nodeClass, isActive && 'pf-pulse')}
         transform={isDiamond ? `rotate(45 ${x} ${y})` : undefined}
-      >
-        {isActive && (
-          <animate
-            attributeName="opacity"
-            values="1;0.6;1"
-            dur="1.5s"
-            repeatCount="indefinite"
-          />
-        )}
-      </rect>
+      />
 
-      {/* Glow effect for active nodes */}
-      {isActive && (
-        <rect
-          x={x - NODE_SIZE / 2 - 4}
-          y={y - NODE_SIZE / 2 - 4}
-          width={NODE_SIZE + 8}
-          height={NODE_SIZE + 8}
-          rx={isDiamond ? 6 : 10}
-          fill="none"
-          stroke={colors.stroke}
-          strokeWidth={1}
-          opacity={0.3}
-          transform={isDiamond ? `rotate(45 ${x} ${y})` : undefined}
-        >
-          <animate
-            attributeName="opacity"
-            values="0.3;0.1;0.3"
-            dur="1.5s"
-            repeatCount="indefinite"
-          />
-        </rect>
-      )}
-
-      {/* Icon */}
+      {/* Icon at top */}
       <foreignObject
-        x={x - 10}
-        y={y - 10}
-        width={20}
-        height={20}
+        x={x - ICON_SIZE / 2}
+        y={y - NODE_SIZE / 2 + 8}
+        width={ICON_SIZE}
+        height={ICON_SIZE}
       >
         <div className="flex items-center justify-center w-full h-full">
           {isActive ? (
-            <Loader2 className="w-5 h-5 text-white animate-spin" />
+            <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
           ) : (
-            <Icon className="w-5 h-5 text-white" />
+            <Icon className="w-3.5 h-3.5 text-white" />
           )}
         </div>
       </foreignObject>
 
-      {/* Label */}
+      {/* Label inside container */}
       <text
         x={x}
-        y={y + NODE_SIZE / 2 + 14}
+        y={y + NODE_SIZE / 2 - 8}
         textAnchor="middle"
-        className="text-[10px] font-medium"
-        fill={status === 'idle' || status === 'skipped' ? '#6B7280' : '#D1D5DB'}
+        className={cn('text-[7px] font-medium', getTextClass(status))}
       >
         {label}
       </text>
@@ -233,49 +289,37 @@ function MCPServer({
   label: string
   status: NodeStatus
 }) {
-  const colors = getStatusColor(status)
   const isActive = status === 'executing'
   const opacity = status === 'idle' ? 0.5 : 1
 
   return (
-    <g opacity={opacity}>
+    <g opacity={opacity} className={isActive ? 'pf-glow' : ''}>
       <rect
         x={x - MCP_SIZE / 2}
         y={y - MCP_SIZE / 2}
         width={MCP_SIZE}
         height={MCP_SIZE}
-        rx={4}
-        fill={colors.fill}
-        stroke={colors.stroke}
+        rx={6}
         strokeWidth={1}
-      >
-        {isActive && (
-          <animate
-            attributeName="opacity"
-            values="1;0.6;1"
-            dur="1.5s"
-            repeatCount="indefinite"
-          />
-        )}
-      </rect>
+        className={cn(getNodeClass(status), isActive && 'pf-pulse')}
+      />
 
       <foreignObject
-        x={x - 6}
-        y={y - 10}
-        width={12}
-        height={12}
+        x={x - MCP_ICON_SIZE / 2}
+        y={y - MCP_SIZE / 2 + 8}
+        width={MCP_ICON_SIZE}
+        height={MCP_ICON_SIZE}
       >
         <div className="flex items-center justify-center w-full h-full">
-          <Server className="w-3 h-3 text-white" />
+          <Server className="w-4 h-4 text-white" />
         </div>
       </foreignObject>
 
       <text
         x={x}
-        y={y + 8}
+        y={y + MCP_SIZE / 2 - 8}
         textAnchor="middle"
-        className="text-[8px]"
-        fill="#9CA3AF"
+        className="text-[10px] font-medium pf-text-mcp"
       >
         {label}
       </text>
@@ -295,17 +339,6 @@ function LLMProvider({
   status: NodeStatus
 }) {
   const isActive = status === 'executing'
-  const isCompleted = status === 'completed'
-
-  const fill = isCompleted ? 'rgba(30, 58, 138, 0.5)' :
-               isActive ? 'rgba(30, 64, 175, 0.5)' :
-               'rgba(31, 41, 55, 1)'
-  const stroke = isCompleted ? '#2563EB' :
-                 isActive ? '#3B82F6' :
-                 '#374151'
-  const textColor = isCompleted ? '#93C5FD' :
-                    isActive ? '#BFDBFE' :
-                    '#6B7280'
   const opacity = status === 'idle' ? 0.5 : 1
 
   return (
@@ -316,26 +349,15 @@ function LLMProvider({
         width={LLM_WIDTH}
         height={LLM_HEIGHT}
         rx={4}
-        fill={fill}
-        stroke={stroke}
         strokeWidth={1}
-      >
-        {isActive && (
-          <animate
-            attributeName="opacity"
-            values="1;0.6;1"
-            dur="1.5s"
-            repeatCount="indefinite"
-          />
-        )}
-      </rect>
+        className={cn(getLLMClass(status), isActive && 'pf-pulse')}
+      />
 
       <text
         x={x}
-        y={y + 3}
+        y={y + 4}
         textAnchor="middle"
-        className="text-[9px] font-medium"
-        fill={textColor}
+        className={cn('text-[10px] font-medium', getLLMTextClass(status))}
       >
         {name}
       </text>
@@ -361,9 +383,58 @@ function GroupBox({
       width={width}
       height={height}
       rx={8}
-      fill="rgba(31, 41, 55, 0.3)"
-      stroke="#374151"
       strokeWidth={1}
+      className="pf-group"
+    />
+  )
+}
+
+function Arrow({
+  x1,
+  y1,
+  x2,
+  y2,
+  status,
+  biDirectional = false,
+}: {
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  status: NodeStatus
+  biDirectional?: boolean
+}) {
+  const markerEnd = `url(#arrow-${status})`
+  const markerStart = biDirectional ? `url(#arrow-start-${status})` : undefined
+
+  return (
+    <line
+      x1={x1}
+      y1={y1}
+      x2={x2}
+      y2={y2}
+      strokeWidth={2}
+      markerEnd={markerEnd}
+      markerStart={markerStart}
+      className={getConnectorClass(status)}
+    />
+  )
+}
+
+function ArrowPath({
+  d,
+  status,
+}: {
+  d: string
+  status: NodeStatus
+}) {
+  return (
+    <path
+      d={d}
+      strokeWidth={2}
+      fill="none"
+      markerEnd={`url(#arrow-${status})`}
+      className={getConnectorClass(status)}
     />
   )
 }
@@ -411,149 +482,119 @@ export function ProcessFlow({
   return (
     <div className="w-full p-4 overflow-x-auto">
       <svg
-        viewBox="0 0 900 280"
+        viewBox="0 0 700 310"
         preserveAspectRatio="xMidYMid meet"
-        className="w-full min-w-[900px]"
-        style={{ minHeight: '280px' }}
+        className="w-full min-w-[700px]"
+        style={{ minHeight: '310px' }}
       >
-        {/* === CONNECTORS (rendered first, behind nodes) === */}
+        <ArrowMarkers />
+
+        {/* === CONNECTORS === */}
 
         {/* Cache bypass elbow (above Row 1) */}
-        <path
+        <ArrowPath
           d={`M ${NODES.cache.x} ${NODES.cache.y - NODE_SIZE/2 - 5}
               L ${NODES.cache.x} 15
               L ${NODES.output.x} 15
               L ${NODES.output.x} ${NODES.output.y - NODE_SIZE/2 - 5}`}
-          stroke={getConnectorColor(bypassStatus)}
-          strokeWidth={2}
-          fill="none"
+          status={bypassStatus}
         />
 
-        {/* Row 1: Horizontal connectors */}
-        <line
+        {/* Row 1: Horizontal arrows */}
+        <Arrow
           x1={NODES.input.x + NODE_SIZE/2 + 2}
           y1={ROW1_Y}
-          x2={NODES.cache.x - NODE_SIZE/2 - 8}
+          x2={NODES.cache.x - NODE_SIZE/2 - 12}
           y2={ROW1_Y}
-          stroke={getConnectorColor(conn(inputStatus, cacheState === 'idle' ? 'idle' : 'completed'))}
-          strokeWidth={2}
+          status={conn(inputStatus, cacheState === 'idle' ? 'idle' : 'completed')}
         />
-        <line
-          x1={NODES.cache.x + NODE_SIZE/2 + 8}
+        <Arrow
+          x1={NODES.cache.x + NODE_SIZE/2 + 12}
           y1={ROW1_Y}
-          x2={NODES.a2a.x - NODE_SIZE/2 - 2}
+          x2={NODES.a2a.x - NODE_SIZE/2 - 12}
           y2={ROW1_Y}
-          stroke={getConnectorColor(cacheState === 'miss' ? conn('completed' as NodeStatus, a2aStatus) : 'idle')}
-          strokeWidth={2}
+          status={cacheState === 'miss' ? conn('completed' as NodeStatus, a2aStatus) : 'idle'}
         />
-        <line
+        <Arrow
           x1={NODES.a2a.x + NODE_SIZE/2 + 2}
           y1={ROW1_Y}
-          x2={NODES.analyzer.x - NODE_SIZE/2 - 10}
+          x2={AGENTS_GROUP.x - 12}
           y2={ROW1_Y}
-          stroke={getConnectorColor(conn(a2aStatus, analyzerStatus))}
-          strokeWidth={2}
+          status={conn(a2aStatus, analyzerStatus)}
         />
-        <line
+        <Arrow
           x1={NODES.analyzer.x + NODE_SIZE/2 + 2}
           y1={ROW1_Y}
-          x2={NODES.critic.x - NODE_SIZE/2 - 2}
+          x2={NODES.critic.x - NODE_SIZE/2 - 12}
           y2={ROW1_Y}
-          stroke={getConnectorColor(conn(analyzerStatus, criticStatus))}
-          strokeWidth={2}
+          status={conn(analyzerStatus, criticStatus)}
         />
-        <line
+        <Arrow
           x1={NODES.critic.x + NODE_SIZE/2 + 2}
           y1={ROW1_Y}
-          x2={NODES.editor.x - NODE_SIZE/2 - 2}
+          x2={NODES.editor.x - NODE_SIZE/2 - 12}
           y2={ROW1_Y}
-          stroke={getConnectorColor(conn(criticStatus, editorStatus))}
-          strokeWidth={2}
+          status={conn(criticStatus, editorStatus)}
         />
-        <line
-          x1={NODES.editor.x + NODE_SIZE/2 + 10}
+        <Arrow
+          x1={AGENTS_GROUP.x + AGENTS_GROUP.width + 2}
           y1={ROW1_Y}
-          x2={NODES.output.x - NODE_SIZE/2 - 2}
+          x2={NODES.output.x - NODE_SIZE/2 - 12}
           y2={ROW1_Y}
-          stroke={getConnectorColor(conn(editorStatus, outputStatus))}
-          strokeWidth={2}
+          status={conn(editorStatus, outputStatus)}
         />
 
-        {/* Input to Exchange vertical connector */}
-        <line
+        {/* Input to Exchange (down arrow) */}
+        <Arrow
           x1={NODES.input.x}
           y1={NODES.input.y + NODE_SIZE/2 + 2}
           x2={NODES.exchange.x}
-          y2={NODES.exchange.y - NODE_SIZE/2 - 2}
-          stroke={getConnectorColor(conn(inputStatus, exchangeStatus))}
-          strokeWidth={2}
+          y2={NODES.exchange.y - NODE_SIZE/2 - 12}
+          status={conn(inputStatus, exchangeStatus)}
         />
 
-        {/* A2A to Researcher elbow connector */}
-        <path
-          d={`M ${NODES.a2a.x} ${NODES.a2a.y + NODE_SIZE/2 + 2}
-              L ${NODES.a2a.x} ${ROW3_Y}
-              L ${NODES.researcher.x + NODE_SIZE/2 + 2} ${ROW3_Y}`}
-          stroke={getConnectorColor(conn(a2aStatus, researcherStatus))}
-          strokeWidth={2}
-          fill="none"
+        {/* A2A ↔ Researcher (bi-directional vertical) */}
+        <Arrow
+          x1={NODES.a2a.x}
+          y1={NODES.a2a.y + NODE_SIZE/2 + 2}
+          x2={NODES.researcher.x}
+          y2={NODES.researcher.y - NODE_SIZE/2 - 12}
+          status={conn(a2aStatus, researcherStatus)}
+          biDirectional
         />
 
-        {/* Researcher to MCP Servers connector */}
-        <line
+        {/* Agents group ↔ LLM group (bi-directional) */}
+        <Arrow
+          x1={AGENTS_CENTER_X}
+          y1={AGENTS_GROUP.y + AGENTS_GROUP.height + 2}
+          x2={AGENTS_CENTER_X}
+          y2={LLM_GROUP.y - 12}
+          status={llmStatus}
+          biDirectional
+        />
+
+        {/* Researcher ↔ MCP group (bi-directional horizontal) */}
+        <Arrow
           x1={NODES.researcher.x + NODE_SIZE/2 + 2}
           y1={ROW3_Y}
-          x2={MCP_SERVERS[0].x - MCP_SIZE/2 - 10}
+          x2={MCP_GROUP.x - 12}
           y2={ROW3_Y}
-          stroke={getConnectorColor(researcherStatus)}
-          strokeWidth={2}
+          status={researcherStatus}
+          biDirectional
         />
-
-        {/* Vertical connectors from Agents to LLMs */}
-        {LLM_PROVIDERS.map((llm, i) => (
-          <line
-            key={llm.name}
-            x1={llm.x}
-            y1={ROW1_Y + NODE_SIZE/2 + 8}
-            x2={llm.x}
-            y2={ROW2_Y - LLM_HEIGHT/2 - 2}
-            stroke={getConnectorColor(llmStatus)}
-            strokeWidth={2}
-          />
-        ))}
 
         {/* === GROUP BOXES === */}
 
-        {/* Agents group box */}
-        <GroupBox
-          x={NODES.analyzer.x - NODE_SIZE/2 - 8}
-          y={ROW1_Y - NODE_SIZE/2 - 12}
-          width={NODES.editor.x - NODES.analyzer.x + NODE_SIZE + 16}
-          height={NODE_SIZE + 35}
-        />
-
-        {/* LLM Providers group box */}
-        <GroupBox
-          x={LLM_PROVIDERS[0].x - LLM_WIDTH/2 - 8}
-          y={ROW2_Y - LLM_HEIGHT/2 - 8}
-          width={LLM_PROVIDERS[2].x - LLM_PROVIDERS[0].x + LLM_WIDTH + 16}
-          height={LLM_HEIGHT + 16}
-        />
-
-        {/* MCP Servers group box */}
-        <GroupBox
-          x={MCP_SERVERS[0].x - MCP_SIZE/2 - 8}
-          y={ROW3_Y - MCP_SIZE/2 - 8}
-          width={MCP_SERVERS[5].x - MCP_SERVERS[0].x + MCP_SIZE + 16}
-          height={MCP_SIZE + 16}
-        />
+        <GroupBox {...AGENTS_GROUP} />
+        <GroupBox {...LLM_GROUP} />
+        <GroupBox {...MCP_GROUP} />
 
         {/* === NODES === */}
 
         {/* Row 1: Main flow */}
-        <SVGNode x={NODES.input.x} y={NODES.input.y} icon={User} label="User Input" status={inputStatus} />
+        <SVGNode x={NODES.input.x} y={NODES.input.y} icon={User} label="Input" status={inputStatus} />
         <SVGNode x={NODES.cache.x} y={NODES.cache.y} icon={Database} label="Cache" status={cacheState === 'idle' ? 'idle' : 'completed'} isDiamond cacheState={cacheState} />
-        <SVGNode x={NODES.a2a.x} y={NODES.a2a.y} icon={Network} label="A2A Client" status={a2aStatus} />
+        <SVGNode x={NODES.a2a.x} y={NODES.a2a.y} icon={Network} label="A2A" status={a2aStatus} />
         <SVGNode x={NODES.analyzer.x} y={NODES.analyzer.y} icon={Brain} label="Analyzer" status={analyzerStatus} />
         <SVGNode x={NODES.critic.x} y={NODES.critic.y} icon={MessageSquare} label="Critic" status={criticStatus} />
         <SVGNode x={NODES.editor.x} y={NODES.editor.y} icon={Edit3} label="Editor" status={editorStatus} />
@@ -573,7 +614,7 @@ export function ProcessFlow({
         ))}
 
         {/* Row 3: Researcher + MCP Servers */}
-        <SVGNode x={NODES.researcher.x} y={NODES.researcher.y} icon={Search} label="Researcher" status={researcherStatus} />
+        <SVGNode x={NODES.researcher.x} y={NODES.researcher.y} icon={Search} label="Research" status={researcherStatus} />
 
         {MCP_SERVERS.map((mcp) => (
           <MCPServer

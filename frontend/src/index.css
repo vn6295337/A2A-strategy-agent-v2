@@ -107,6 +107,50 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
+  /* ProcessFlow SVG Colors */
+  :root {
+    /* Node states */
+    --pf-idle-fill: #374151;
+    --pf-idle-stroke: #4B5563;
+    --pf-executing-fill: #059669;
+    --pf-executing-stroke: #34D399;
+    --pf-completed-fill: #047857;
+    --pf-completed-stroke: #10B981;
+    --pf-failed-fill: #DC2626;
+    --pf-failed-stroke: #F87171;
+
+    /* Cache states */
+    --pf-cache-hit-fill: #047857;
+    --pf-cache-hit-stroke: #10B981;
+    --pf-cache-miss-fill: #D97706;
+    --pf-cache-miss-stroke: #FBBF24;
+
+    /* LLM providers */
+    --pf-llm-idle-fill: rgba(31, 41, 55, 1);
+    --pf-llm-idle-stroke: #374151;
+    --pf-llm-active-fill: rgba(30, 64, 175, 0.5);
+    --pf-llm-active-stroke: #3B82F6;
+    --pf-llm-completed-fill: rgba(30, 58, 138, 0.5);
+    --pf-llm-completed-stroke: #2563EB;
+
+    /* Connector colors */
+    --pf-connector-idle: #4B5563;
+    --pf-connector-executing: #34D399;
+    --pf-connector-completed: #10B981;
+
+    /* Group box */
+    --pf-group-fill: rgba(31, 41, 55, 0.3);
+    --pf-group-stroke: #374151;
+
+    /* Text colors */
+    --pf-text-idle: #6B7280;
+    --pf-text-active: #D1D5DB;
+    --pf-text-mcp: #9CA3AF;
+    --pf-llm-text-idle: #6B7280;
+    --pf-llm-text-active: #BFDBFE;
+    --pf-llm-text-completed: #93C5FD;
+  }
 }
 
 @layer base {
@@ -263,6 +307,149 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.7; }
   }
+}
+
+/* === ProcessFlow SVG Styles === */
+
+/* Node base styles */
+.pf-node {
+  transition: fill 0.3s ease, stroke 0.3s ease, opacity 0.3s ease;
+}
+
+.pf-node:hover {
+  filter: brightness(1.15);
+  cursor: pointer;
+}
+
+/* Node states */
+.pf-node-idle {
+  fill: var(--pf-idle-fill);
+  stroke: var(--pf-idle-stroke);
+}
+
+.pf-node-executing {
+  fill: var(--pf-executing-fill);
+  stroke: var(--pf-executing-stroke);
+}
+
+.pf-node-completed {
+  fill: var(--pf-completed-fill);
+  stroke: var(--pf-completed-stroke);
+}
+
+.pf-node-failed {
+  fill: var(--pf-failed-fill);
+  stroke: var(--pf-failed-stroke);
+}
+
+.pf-node-skipped {
+  fill: var(--pf-idle-fill);
+  stroke: var(--pf-idle-stroke);
+  stroke-dasharray: 4 2;
+}
+
+/* Cache states */
+.pf-cache-checking {
+  fill: var(--pf-executing-fill);
+  stroke: var(--pf-executing-stroke);
+}
+
+.pf-cache-hit {
+  fill: var(--pf-cache-hit-fill);
+  stroke: var(--pf-cache-hit-stroke);
+}
+
+.pf-cache-miss {
+  fill: var(--pf-cache-miss-fill);
+  stroke: var(--pf-cache-miss-stroke);
+}
+
+/* Connector styles */
+.pf-connector {
+  transition: stroke 0.3s ease;
+}
+
+.pf-connector-idle {
+  stroke: var(--pf-connector-idle);
+}
+
+.pf-connector-executing {
+  stroke: var(--pf-connector-executing);
+}
+
+.pf-connector-completed {
+  stroke: var(--pf-connector-completed);
+}
+
+/* LLM Provider styles */
+.pf-llm {
+  transition: fill 0.3s ease, stroke 0.3s ease, opacity 0.3s ease;
+}
+
+.pf-llm:hover {
+  filter: brightness(1.1);
+}
+
+.pf-llm-idle {
+  fill: var(--pf-llm-idle-fill);
+  stroke: var(--pf-llm-idle-stroke);
+}
+
+.pf-llm-executing {
+  fill: var(--pf-llm-active-fill);
+  stroke: var(--pf-llm-active-stroke);
+}
+
+.pf-llm-completed {
+  fill: var(--pf-llm-completed-fill);
+  stroke: var(--pf-llm-completed-stroke);
+}
+
+/* Group box styles */
+.pf-group {
+  fill: var(--pf-group-fill);
+  stroke: var(--pf-group-stroke);
+  transition: fill 0.3s ease;
+}
+
+/* Text styles */
+.pf-text-idle {
+  fill: var(--pf-text-idle);
+}
+
+.pf-text-active {
+  fill: var(--pf-text-active);
+}
+
+.pf-text-mcp {
+  fill: var(--pf-text-mcp);
+}
+
+.pf-llm-text-idle {
+  fill: var(--pf-llm-text-idle);
+}
+
+.pf-llm-text-executing {
+  fill: var(--pf-llm-text-active);
+}
+
+.pf-llm-text-completed {
+  fill: var(--pf-llm-text-completed);
+}
+
+/* Glow effect for active nodes */
+.pf-glow {
+  filter: drop-shadow(0 0 6px var(--pf-executing-stroke));
+}
+
+/* Pulse animation for SVG */
+.pf-pulse {
+  animation: pfPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pfPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 /* Smooth scrollbar */
