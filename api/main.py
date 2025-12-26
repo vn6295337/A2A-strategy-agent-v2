@@ -353,16 +353,24 @@ STATIC_DIR = Path(__file__).parent.parent / "static"
 if STATIC_DIR.exists():
     from fastapi.responses import FileResponse
 
+    # Mount static assets FIRST (before catch-all routes)
+    app.mount("/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="assets")
+
     @app.get("/")
     async def serve_index():
         return FileResponse(STATIC_DIR / "index.html")
 
-    # Serve static assets
-    app.mount("/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="assets")
+    # Serve vite.svg and other root static files
+    @app.get("/vite.svg")
+    async def serve_vite_svg():
+        return FileResponse(STATIC_DIR / "vite.svg")
 
-    # Fallback for SPA routing
+    # Fallback for SPA routing - exclude API and asset paths
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
+        # Don't intercept API routes or assets
+        if full_path.startswith(("api/", "assets/", "analyze", "workflow", "health")):
+            return {"error": "Not found"}
         file_path = STATIC_DIR / full_path
         if file_path.exists() and file_path.is_file():
             return FileResponse(file_path)
