@@ -40,22 +40,27 @@ const GAP = 72
 const CONNECTOR_PAD = 2  // fix #2: single source of truth
 const GROUP_PAD = 8      // fix #7: consistent group box padding
 
-// Row Y positions (fix #6: better vertical spacing)
-const ROW1_Y = 60
-const ROW2_Y = 150
+// Row Y positions (pulled up for tighter header gap)
+const ROW1_Y = 52
+const ROW2_Y = 148
 const ROW3_Y = 210
 
-// Node X positions
+// Centering: flow occupies 75% evenly
+const SVG_WIDTH = 560
+const FLOW_WIDTH = GAP * 6
+const FLOW_START_X = (SVG_WIDTH - FLOW_WIDTH) / 2
+
+// Node X positions (centered)
 const NODES = {
-  input: { x: 40, y: ROW1_Y },
-  cache: { x: 40 + GAP, y: ROW1_Y },
-  a2a: { x: 40 + GAP * 2, y: ROW1_Y },
-  analyzer: { x: 40 + GAP * 3, y: ROW1_Y },
-  critic: { x: 40 + GAP * 4, y: ROW1_Y },
-  editor: { x: 40 + GAP * 5, y: ROW1_Y },
-  output: { x: 40 + GAP * 6, y: ROW1_Y },
-  exchange: { x: 40, y: ROW2_Y },
-  researcher: { x: 40 + GAP * 2, y: ROW3_Y },
+  input: { x: FLOW_START_X, y: ROW1_Y },
+  cache: { x: FLOW_START_X + GAP, y: ROW1_Y },
+  a2a: { x: FLOW_START_X + GAP * 2, y: ROW1_Y },
+  analyzer: { x: FLOW_START_X + GAP * 3, y: ROW1_Y },
+  critic: { x: FLOW_START_X + GAP * 4, y: ROW1_Y },
+  editor: { x: FLOW_START_X + GAP * 5, y: ROW1_Y },
+  output: { x: FLOW_START_X + GAP * 6, y: ROW1_Y },
+  exchange: { x: FLOW_START_X, y: ROW2_Y },
+  researcher: { x: FLOW_START_X + GAP * 2, y: ROW3_Y },
 }
 
 // MCP Server positions
@@ -511,14 +516,14 @@ export function ProcessFlow({
             strokeWidth={1.2}
           />
 
-          {/* Researcher → MCP group (Fix #8: strokeWidth 1.4) */}
+          {/* Researcher → MCP group (strengthened for visual gravity) */}
           <Arrow
             x1={nodeRight(NODES.researcher)}
             y1={ROW3_Y}
             x2={MCP_GROUP.x - CONNECTOR_PAD}
             y2={ROW3_Y}
             status={researcherStatus}
-            strokeWidth={1.4}
+            strokeWidth={1.6}
           />
 
           {/* Agents → LLM group */}
