@@ -88,147 +88,170 @@ def format_date(date_str):
 
 
 def _render_research_sidebar(metrics: dict):
-    """Render research data in the left sidebar with expanders."""
+    """Render research data in the left sidebar."""
     if not metrics:
         return
-
-    st.sidebar.markdown("---")
 
     # 1. FINANCIALS
     fin = metrics.get("financials", {})
     fin_data = fin.get("financials", {})
     fin_date = fin_data.get("revenue", {}).get("end_date", "") if isinstance(fin_data, dict) else ""
-    fin_label = f"📊 Financials ({format_date(fin_date)})" if fin_date else "📊 Financials"
 
-    with st.sidebar.expander(fin_label, expanded=False):
-        if "error" in fin:
-            st.warning(f"Failed: {fin.get('error', 'Unknown error')[:50]}")
-        else:
-            revenue = fin_data.get("revenue") if isinstance(fin_data, dict) else None
-            st.write(f"**Revenue:** {format_currency(revenue)}")
-            st.write(f"**Net Margin:** {format_percent(fin_data.get('net_margin_pct'))}")
-            st.write(f"**Gross Margin:** {format_percent(fin_data.get('gross_margin_pct'))}")
+    st.sidebar.subheader("Financials")
+    if fin_date:
+        st.sidebar.caption(f"As of {format_date(fin_date)}")
+    if "error" in fin:
+        st.sidebar.warning(f"Failed: {fin.get('error', 'Unknown error')[:50]}")
+    else:
+        revenue = fin_data.get("revenue") if isinstance(fin_data, dict) else None
+        st.sidebar.markdown(f"Revenue: **{format_currency(revenue)}**")
+        st.sidebar.markdown(f"Net Margin: **{format_percent(fin_data.get('net_margin_pct'))}**")
+        st.sidebar.markdown(f"Gross Margin: **{format_percent(fin_data.get('gross_margin_pct'))}**")
+        debt = fin.get("debt", {})
+        st.sidebar.markdown(f"Debt/Equity: **{format_ratio(debt.get('debt_to_equity'))}**")
+        st.sidebar.markdown(f"Total Debt: **{format_currency(debt.get('total_debt'))}**")
+        cf = fin.get("cash_flow", {})
+        st.sidebar.markdown(f"Free Cash Flow: **{format_currency(cf.get('free_cash_flow'))}**")
 
-            debt = fin.get("debt", {})
-            st.write(f"**Debt/Equity:** {format_ratio(debt.get('debt_to_equity'))}")
-            st.write(f"**Total Debt:** {format_currency(debt.get('total_debt'))}")
-
-            cf = fin.get("cash_flow", {})
-            st.write(f"**Free Cash Flow:** {format_currency(cf.get('free_cash_flow'))}")
+    st.sidebar.markdown("---")
 
     # 2. VALUATION
     val = metrics.get("valuation", {})
     val_date = val.get("generated_at", "")
-    val_label = f"💰 Valuation ({format_date(val_date)})" if val_date else "💰 Valuation"
 
-    with st.sidebar.expander(val_label, expanded=False):
-        if "error" in val:
-            st.warning(f"Failed: {val.get('error', 'Unknown error')[:50]}")
-        else:
-            val_metrics = val.get("metrics", {})
-            pe = val_metrics.get("pe_ratio", {})
-            st.write(f"**P/E (Trailing):** {format_number(pe.get('trailing'))}")
-            st.write(f"**P/E (Forward):** {format_number(pe.get('forward'))}")
-            st.write(f"**P/S:** {format_number(val_metrics.get('ps_ratio'))}")
-            st.write(f"**P/B:** {format_number(val_metrics.get('pb_ratio'))}")
-            st.write(f"**EV/EBITDA:** {format_number(val_metrics.get('ev_ebitda'))}")
+    st.sidebar.subheader("Valuation")
+    if val_date:
+        st.sidebar.caption(f"As of {format_date(val_date)}")
+    if "error" in val:
+        st.sidebar.warning(f"Failed: {val.get('error', 'Unknown error')[:50]}")
+    else:
+        val_metrics = val.get("metrics", {})
+        # Stock Price
+        price = val_metrics.get("current_price")
+        if price:
+            st.sidebar.markdown(f"Stock Price: **${format_number(price)}**")
+        st.sidebar.markdown(f"Market Cap: **{format_currency(val_metrics.get('market_cap'))}**")
+        pe = val_metrics.get("pe_ratio", {})
+        st.sidebar.markdown(f"P/E (T/F): **{format_number(pe.get('trailing'))} / {format_number(pe.get('forward'))}**")
+        st.sidebar.markdown(f"P/S: **{format_number(val_metrics.get('ps_ratio'))}**")
+        st.sidebar.markdown(f"P/B: **{format_number(val_metrics.get('pb_ratio'))}**")
+        st.sidebar.markdown(f"EV/EBITDA: **{format_number(val_metrics.get('ev_ebitda'))}**")
+        peg = val_metrics.get("peg_ratio", {})
+        st.sidebar.markdown(f"PEG (Trailing): **{format_number(peg.get('trailing'))}**")
 
-            peg = val_metrics.get("peg_ratio", {})
-            st.write(f"**PEG (Trailing):** {format_number(peg.get('trailing'))}")
-            st.write(f"**Market Cap:** {format_currency(val_metrics.get('market_cap'))}")
+    st.sidebar.markdown("---")
 
     # 3. VOLATILITY
     vol = metrics.get("volatility", {})
     vol_date = vol.get("generated_at", "")
-    vol_label = f"📈 Volatility ({format_date(vol_date)})" if vol_date else "📈 Volatility"
 
-    with st.sidebar.expander(vol_label, expanded=False):
-        if "error" in vol:
-            st.warning(f"Failed: {vol.get('error', 'Unknown error')[:50]}")
-        else:
-            vol_metrics = vol.get("metrics", {})
-            vix = vol_metrics.get("vix", {})
-            st.write(f"**VIX:** {format_number(vix.get('value'))} ({vix.get('interpretation', 'N/A')})")
+    st.sidebar.subheader("Volatility")
+    if vol_date:
+        st.sidebar.caption(f"As of {format_date(vol_date)}")
+    if "error" in vol:
+        st.sidebar.warning(f"Failed: {vol.get('error', 'Unknown error')[:50]}")
+    else:
+        vol_metrics = vol.get("metrics", {})
+        vix = vol_metrics.get("vix", {})
+        st.sidebar.markdown(f"VIX: **{format_number(vix.get('value'))}** ({vix.get('interpretation', 'N/A')})")
+        beta = vol_metrics.get("beta", {})
+        st.sidebar.markdown(f"Beta: **{format_number(beta.get('value'))}** ({beta.get('interpretation', 'N/A')})")
+        hist_vol = vol_metrics.get("historical_volatility", {})
+        st.sidebar.markdown(f"Hist. Vol: **{format_percent(hist_vol.get('value'))}**")
 
-            beta = vol_metrics.get("beta", {})
-            st.write(f"**Beta:** {format_number(beta.get('value'))} ({beta.get('interpretation', 'N/A')})")
-
-            hist_vol = vol_metrics.get("historical_volatility", {})
-            st.write(f"**Hist. Vol:** {format_percent(hist_vol.get('value'))}")
+    st.sidebar.markdown("---")
 
     # 4. MACRO
     macro = metrics.get("macro", {})
     macro_metrics = macro.get("metrics", {})
     macro_date = macro_metrics.get("gdp_growth", {}).get("date", "") if isinstance(macro_metrics, dict) else ""
-    macro_label = f"🌍 Macro ({format_date(macro_date)})" if macro_date else "🌍 Macro"
 
-    with st.sidebar.expander(macro_label, expanded=False):
-        if "error" in macro:
-            st.warning(f"Failed: {macro.get('error', 'Unknown error')[:50]}")
-        else:
-            gdp = macro_metrics.get("gdp_growth", {})
-            st.write(f"**GDP Growth:** {format_percent(gdp.get('value'))}")
+    st.sidebar.subheader("Macro")
+    if macro_date:
+        st.sidebar.caption(f"As of {format_date(macro_date)}")
+    if "error" in macro:
+        st.sidebar.warning(f"Failed: {macro.get('error', 'Unknown error')[:50]}")
+    else:
+        gdp = macro_metrics.get("gdp_growth", {})
+        st.sidebar.markdown(f"GDP Growth: **{format_percent(gdp.get('value'))}**")
+        ir = macro_metrics.get("interest_rate", {})
+        st.sidebar.markdown(f"Fed Rate: **{format_percent(ir.get('value'))}** ({ir.get('trend', 'N/A')})")
+        cpi = macro_metrics.get("cpi_inflation", {})
+        st.sidebar.markdown(f"CPI/Inflation: **{format_percent(cpi.get('value'))}**")
+        unemp = macro_metrics.get("unemployment", {})
+        st.sidebar.markdown(f"Unemployment: **{format_percent(unemp.get('value'))}**")
 
-            ir = macro_metrics.get("interest_rate", {})
-            st.write(f"**Fed Rate:** {format_percent(ir.get('value'))} ({ir.get('trend', 'N/A')})")
-
-            cpi = macro_metrics.get("cpi_inflation", {})
-            st.write(f"**CPI/Inflation:** {format_percent(cpi.get('value'))}")
-
-            unemp = macro_metrics.get("unemployment", {})
-            st.write(f"**Unemployment:** {format_percent(unemp.get('value'))}")
+    st.sidebar.markdown("---")
 
     # 5. NEWS
     news = metrics.get("news", {})
     news_count = len(news.get("results", []))
-    news_label = f"📰 News ({news_count} articles)" if news_count else "📰 News"
 
-    with st.sidebar.expander(news_label, expanded=False):
-        if "error" in news:
-            st.warning(f"Failed: {news.get('error', 'Unknown error')[:50]}")
-        else:
-            # Show AI summary if available
-            if news.get("answer"):
-                st.markdown(f"*{news['answer'][:150]}...*")
-                st.markdown("---")
+    st.sidebar.subheader(f"News ({news_count})")
+    if "error" in news:
+        st.sidebar.warning(f"Failed: {news.get('error', 'Unknown error')[:50]}")
+    else:
+        for article in news.get("results", [])[:5]:
+            title = article.get("title", "Untitled")[:45]
+            url = article.get("url", "#")
+            pub_date = format_date(article.get("published_date", ""))
+            st.sidebar.markdown(f"[{title}...]({url})")
+            if pub_date:
+                st.sidebar.caption(pub_date)
 
-            # Show article headlines with dates
-            for article in news.get("results", [])[:5]:
-                title = article.get("title", "Untitled")[:50]
-                url = article.get("url", "#")
-                pub_date = format_date(article.get("published_date", ""))
-                date_str = f" ({pub_date})" if pub_date else ""
-                st.markdown(f"• [{title}...]({url}){date_str}")
+    st.sidebar.markdown("---")
 
     # 6. SENTIMENT
     sent = metrics.get("sentiment", {})
     sent_date = sent.get("generated_at", "") or sent.get("metrics", {}).get("finnhub", {}).get("as_of", "")
-    sent_label = f"💬 Sentiment ({format_date(sent_date)})" if sent_date else "💬 Sentiment"
 
-    with st.sidebar.expander(sent_label, expanded=False):
-        if "error" in sent:
-            st.warning(f"Failed: {sent.get('error', 'Unknown error')[:50]}")
+    st.sidebar.subheader("Sentiment")
+    if sent_date:
+        st.sidebar.caption(f"As of {format_date(sent_date)}")
+    if "error" in sent:
+        st.sidebar.warning(f"Failed: {sent.get('error', 'Unknown error')[:50]}")
+    else:
+        composite = sent.get("composite_score")
+        interpretation = sent.get("overall_interpretation", "")
+        if composite is not None:
+            st.sidebar.markdown(f"Overall: **{format_number(composite, 0)}/100** ({interpretation})")
+
+        sent_metrics = sent.get("metrics", {})
+        fh = sent_metrics.get("finnhub", {})
+        if fh and "error" not in fh:
+            fh_score = fh.get("score")
+            fh_articles = fh.get("articles_analyzed", 0)
+            st.sidebar.markdown(f"Finnhub: **{format_number(fh_score, 0)}/100** ({fh_articles} articles)")
+
+        reddit = sent_metrics.get("reddit", {})
+        if reddit and "error" not in reddit:
+            r_score = reddit.get("score")
+            r_posts = reddit.get("posts_analyzed", 0)
+            st.sidebar.markdown(f"Reddit: **{format_number(r_score, 0)}/100** ({r_posts} posts)")
+
+
+def _render_api_status():
+    """Render API connection status at bottom of sidebar."""
+    st.sidebar.markdown("---")
+    with st.sidebar.expander("API Status", expanded=False):
+        if os.getenv("GROQ_API_KEY"):
+            st.success("Groq: Connected")
+        elif os.getenv("GEMINI_API_KEY"):
+            st.success("Gemini: Connected")
+        elif os.getenv("OPENROUTER_API_KEY"):
+            st.success("OpenRouter: Connected")
         else:
-            composite = sent.get("composite_score")
-            interpretation = sent.get("overall_interpretation", "")
-            if composite is not None:
-                st.write(f"**Overall:** {format_number(composite, 0)}/100 ({interpretation})")
+            st.error("No LLM API configured")
 
-            sent_metrics = sent.get("metrics", {})
+        if os.getenv("FRED_API_KEY"):
+            st.success("FRED: Connected")
+        else:
+            st.warning("FRED: Not configured")
 
-            # Finnhub
-            fh = sent_metrics.get("finnhub", {})
-            if fh and "error" not in fh:
-                fh_score = fh.get("score")
-                fh_articles = fh.get("articles_analyzed", 0)
-                st.write(f"**Finnhub:** {format_number(fh_score, 0)}/100 ({fh_articles} articles)")
-
-            # Reddit
-            reddit = sent_metrics.get("reddit", {})
-            if reddit and "error" not in reddit:
-                r_score = reddit.get("score")
-                r_posts = reddit.get("posts_analyzed", 0)
-                st.write(f"**Reddit:** {format_number(r_score, 0)}/100 ({r_posts} posts)")
+        if os.getenv("FINNHUB_API_KEY"):
+            st.success("Finnhub: Connected")
+        else:
+            st.warning("Finnhub: Not configured")
 
 
 # Load environment variables from multiple locations
@@ -245,39 +268,10 @@ has_llm_key = any([
 st.set_page_config(layout="wide", page_title="A2A Strategy Agent")
 st.title("A2A Strategy Agent")
 
-# Sidebar header
+# Sidebar header - Research Data (populated after analysis)
 st.sidebar.header("Research Data")
-st.sidebar.caption("Data shown after analysis completes")
-
-# Show API status in sidebar
-st.sidebar.markdown("---")
-st.sidebar.subheader("API Status")
-if os.getenv("GROQ_API_KEY"):
-    st.sidebar.success("Groq: Connected")
-elif os.getenv("GEMINI_API_KEY"):
-    st.sidebar.success("Gemini: Connected")
-elif os.getenv("OPENROUTER_API_KEY"):
-    st.sidebar.success("OpenRouter: Connected")
-else:
-    st.sidebar.error("No LLM API configured")
-
-if os.getenv("FRED_API_KEY"):
-    st.sidebar.success("FRED: Connected")
-else:
-    st.sidebar.warning("FRED: Not configured")
-
-if os.getenv("FINNHUB_API_KEY"):
-    st.sidebar.success("Finnhub: Connected")
-else:
-    st.sidebar.warning("Finnhub: Not configured")
-
-# Show A2A mode status
-st.sidebar.markdown("---")
-st.sidebar.subheader("Research Mode")
-if os.getenv("USE_A2A_RESEARCHER", "false").lower() == "true":
-    st.sidebar.info("A2A Protocol (decoupled)")
-else:
-    st.sidebar.info("Direct MCP (in-process)")
+st.sidebar.caption("Run analysis to populate")
+_render_api_status()
 
 # Main content
 st.header("Strategic SWOT Analysis with Self-Correcting AI")
@@ -340,6 +334,7 @@ if run_button:
     # LEFT SIDEBAR: Research Data Panel
     # ============================================================
     _render_research_sidebar(metrics)
+    _render_api_status()
 
     # ============================================================
     # MAIN CONTENT: SWOT Analysis, Quality, Details
