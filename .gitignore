@@ -179,3 +179,21 @@ node_modules/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Obsidian
+.obsidian/
+
+# Binary/media assets
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.avif
+*.xlsx
+*.pdf
+
+# Storybook assets
+frontend/src/stories/assets/
+
+# Draft files
+process_flow.*
