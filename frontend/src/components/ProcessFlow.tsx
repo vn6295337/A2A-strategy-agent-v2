@@ -12,6 +12,12 @@ import {
   Loader2,
   Network,
   GitBranch,
+  TrendingUp,
+  DollarSign,
+  BarChart3,
+  Globe,
+  Newspaper,
+  Heart,
 } from "lucide-react"
 import type { MCPStatus } from "@/lib/api"
 
@@ -41,7 +47,7 @@ const LLM_HEIGHT = 24
 
 const GAP = 72
 const CONNECTOR_PAD = 2
-const GROUP_PAD = 8
+const GROUP_PAD = 4
 
 // ADJUSTED VALUES FOR TIGHT FIT
 const ROW_GAP = 68            // Slight reduction to tighten vertical flow
@@ -49,8 +55,8 @@ const ROW1_Y = 32             // Pushes top row down so Group Box fits (32 - 30 
 const ROW2_Y = ROW1_Y + ROW_GAP
 const ROW3_Y = ROW2_Y + ROW_GAP
 // SVG dimensions
-const SVG_HEIGHT = 220        // Height for 3-row layout
-const SVG_WIDTH = 560
+const SVG_HEIGHT = 232        // Height for 3-row layout + MCP labels below
+const SVG_WIDTH = 580
 const NODE_COUNT = 7
 const FLOW_WIDTH = GAP * (NODE_COUNT - 1) + NODE_SIZE
 const FLOW_START_X = NODE_SIZE / 2  // Left-aligned with half-node margin
@@ -68,14 +74,14 @@ const NODES = {
 }
 
 const MCP_START_X = NODES.researcher.x + NODE_SIZE / 2 + 40
-const MCP_GAP = 44
+const MCP_GAP = 50
 const MCP_SERVERS = [
-  { id: 'financials', label: 'Fin', x: MCP_START_X },
-  { id: 'valuation', label: 'Val', x: MCP_START_X + MCP_GAP },
-  { id: 'volatility', label: 'Vol', x: MCP_START_X + MCP_GAP * 2 },
-  { id: 'macro', label: 'Mac', x: MCP_START_X + MCP_GAP * 3 },
-  { id: 'news', label: 'News', x: MCP_START_X + MCP_GAP * 4 },
-  { id: 'sentiment', label: 'Sent', x: MCP_START_X + MCP_GAP * 5 },
+  { id: 'financials', label: 'Financials', icon: TrendingUp, x: MCP_START_X },
+  { id: 'valuation', label: 'Valuation', icon: DollarSign, x: MCP_START_X + MCP_GAP },
+  { id: 'volatility', label: 'Volatility', icon: BarChart3, x: MCP_START_X + MCP_GAP * 2 },
+  { id: 'macro', label: 'Macro', icon: Globe, x: MCP_START_X + MCP_GAP * 3 },
+  { id: 'news', label: 'News', icon: Newspaper, x: MCP_START_X + MCP_GAP * 4 },
+  { id: 'sentiment', label: 'Sentiment', icon: Heart, x: MCP_START_X + MCP_GAP * 5 },
 ]
 
 const AGENTS_CENTER_X = (NODES.analyzer.x + NODES.editor.x) / 2
@@ -190,7 +196,7 @@ function SVGNode({
 }) {
   const isExecuting = status === 'executing' || cacheState === 'checking'
   const opacity = status === 'idle' && !cacheState ? 0.7 : status === 'skipped' ? 0.7 : 1
-  const strokeWidth = isAgent ? 2.5 : 2
+  const strokeWidth = isAgent ? 1.5 : 1
 
   return (
     <g opacity={opacity} className="transition-opacity duration-300">
@@ -357,12 +363,12 @@ export function ProcessFlow({
 
           {/* Nodes */}
           <SVGNode x={NODES.input.x} y={NODES.input.y} icon={User} label="User Input" status={inputStatus} />
-          <SVGNode x={NODES.cache.x} y={NODES.cache.y} icon={Database} label="Check cache" status={cacheState === 'idle' ? 'idle' : 'completed'} isDiamond cacheState={cacheState} />
+          <SVGNode x={NODES.cache.x} y={NODES.cache.y} icon={Database} label="Cache" status={cacheState === 'idle' ? 'idle' : 'completed'} isDiamond cacheState={cacheState} />
           <SVGNode x={NODES.a2a.x} y={NODES.a2a.y} icon={Network} label="A2A client" status={a2aStatus} />
           <SVGNode x={NODES.analyzer.x} y={NODES.analyzer.y} icon={Brain} label="Analyzer" status={analyzerStatus} isAgent />
           <SVGNode x={NODES.critic.x} y={NODES.critic.y} icon={MessageSquare} label="Critic" status={criticStatus} isAgent />
           <SVGNode x={NODES.editor.x} y={NODES.editor.y} icon={Edit3} label="Editor" status={editorStatus} isAgent />
-          <SVGNode x={NODES.output.x} y={NODES.output.y} icon={FileOutput} label="SWOT Output" status={outputStatus} />
+          <SVGNode x={NODES.output.x} y={NODES.output.y} icon={FileOutput} label="Output" status={outputStatus} />
 
           <SVGNode x={NODES.exchange.x} y={NODES.exchange.y} icon={GitBranch} label="Exchange" status={exchangeStatus} />
           <SVGNode x={NODES.researcher.x} y={NODES.researcher.y} icon={Search} label="Researcher" status={researcherStatus} isAgent />
@@ -380,7 +386,7 @@ export function ProcessFlow({
                   width={LLM_WIDTH}
                   height={LLM_HEIGHT}
                   rx={4}
-                  strokeWidth={1.5}
+                  strokeWidth={1}
                   className={cn("pf-llm", status === 'executing' ? 'pf-llm-executing' : status === 'completed' ? 'pf-llm-completed' : 'pf-llm-idle')}
                 />
                 <text
@@ -398,11 +404,23 @@ export function ProcessFlow({
           {/* MCP Servers */}
           {MCP_SERVERS.map((mcp) => {
             const status = researcherStatus === 'executing' ? 'executing' : researcherStatus === 'completed' ? 'completed' : 'idle';
+            const Icon = mcp.icon;
             return (
-              <g key={mcp.id} opacity={status === 'executing' ? 1 : status === 'completed' ? 0.7 : 0.5}>
+              <g key={mcp.id} opacity={status === 'executing' ? 1 : status === 'completed' ? 0.85 : 0.6}>
                 <rect x={mcp.x - MCP_SIZE / 2} y={ROW3_Y - MCP_SIZE / 2} width={MCP_SIZE} height={MCP_SIZE} rx={4}
+                      strokeWidth={1}
                       className={cn("pf-node pf-node-mcp", status === 'executing' ? 'pf-node-executing pf-pulse' : status === 'completed' ? 'pf-node-completed' : 'pf-node-idle')} />
-                <text x={mcp.x} y={ROW3_Y + MCP_SIZE / 2 - 5} textAnchor="middle" className="text-[7px] font-medium pf-text-mcp">{mcp.label}</text>
+                <foreignObject
+                  x={mcp.x - MCP_ICON_SIZE / 2}
+                  y={ROW3_Y - MCP_ICON_SIZE / 2}
+                  width={MCP_ICON_SIZE}
+                  height={MCP_ICON_SIZE}
+                >
+                  <div className="flex items-center justify-center w-full h-full">
+                    <Icon className="w-3 h-3 text-white" />
+                  </div>
+                </foreignObject>
+                <text x={mcp.x} y={ROW3_Y + MCP_SIZE / 2 + 8} textAnchor="middle" className="text-[7px] font-medium pf-text-mcp">{mcp.label}</text>
               </g>
             )
           })}
@@ -414,7 +432,7 @@ export function ProcessFlow({
             textAnchor="middle"
             className="text-[7px] font-medium pf-group-label"
           >
-            External Signals (MCP)
+            Custom MCP Servers
           </text>
         </svg>
 

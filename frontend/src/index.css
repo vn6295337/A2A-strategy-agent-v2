@@ -108,11 +108,11 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  /* ProcessFlow SVG Colors */
+  /* ProcessFlow SVG Colors - Light Mode */
   :root {
     /* Node states */
-    --pf-idle-fill: #374151;
-    --pf-idle-stroke: #4B5563;
+    --pf-idle-fill: #6B7280;
+    --pf-idle-stroke: #9CA3AF;
     --pf-executing-fill: #059669;
     --pf-executing-stroke: #34D399;
     --pf-completed-fill: #047857;
@@ -127,27 +127,65 @@
     --pf-cache-miss-stroke: #FBBF24;
 
     /* LLM providers */
-    --pf-llm-idle-fill: rgba(31, 41, 55, 1);
-    --pf-llm-idle-stroke: #374151;
-    --pf-llm-active-fill: rgba(30, 64, 175, 0.5);
+    --pf-llm-idle-fill: #6B7280;
+    --pf-llm-idle-stroke: #9CA3AF;
+    --pf-llm-active-fill: rgba(59, 130, 246, 0.8);
     --pf-llm-active-stroke: #3B82F6;
-    --pf-llm-completed-fill: rgba(30, 58, 138, 0.5);
+    --pf-llm-completed-fill: rgba(37, 99, 235, 0.8);
     --pf-llm-completed-stroke: #2563EB;
 
     /* Connector colors */
+    --pf-connector-idle: #9CA3AF;
+    --pf-connector-executing: #10B981;
+    --pf-connector-completed: #059669;
+
+    /* Group box */
+    --pf-group-fill: rgba(107, 114, 128, 0.1);
+    --pf-group-stroke: #9CA3AF;
+
+    /* Text colors - high contrast for legibility */
+    --pf-text-idle: #374151;
+    --pf-text-active: #111827;
+    --pf-text-mcp: #4B5563;
+    --pf-llm-text-idle: #FFFFFF;
+    --pf-llm-text-active: #FFFFFF;
+    --pf-llm-text-completed: #FFFFFF;
+  }
+
+  /* ProcessFlow SVG Colors - Dark Mode */
+  .dark {
+    --pf-idle-fill: #374151;
+    --pf-idle-stroke: #4B5563;
+    --pf-executing-fill: #059669;
+    --pf-executing-stroke: #34D399;
+    --pf-completed-fill: #047857;
+    --pf-completed-stroke: #10B981;
+    --pf-failed-fill: #DC2626;
+    --pf-failed-stroke: #F87171;
+
+    --pf-cache-hit-fill: #047857;
+    --pf-cache-hit-stroke: #10B981;
+    --pf-cache-miss-fill: #D97706;
+    --pf-cache-miss-stroke: #FBBF24;
+
+    --pf-llm-idle-fill: #374151;
+    --pf-llm-idle-stroke: #4B5563;
+    --pf-llm-active-fill: rgba(30, 64, 175, 0.7);
+    --pf-llm-active-stroke: #3B82F6;
+    --pf-llm-completed-fill: rgba(30, 58, 138, 0.7);
+    --pf-llm-completed-stroke: #2563EB;
+
     --pf-connector-idle: #4B5563;
     --pf-connector-executing: #34D399;
     --pf-connector-completed: #10B981;
 
-    /* Group box */
     --pf-group-fill: rgba(31, 41, 55, 0.3);
-    --pf-group-stroke: #374151;
+    --pf-group-stroke: #4B5563;
 
-    /* Text colors */
-    --pf-text-idle: #6B7280;
-    --pf-text-active: #D1D5DB;
-    --pf-text-mcp: #9CA3AF;
-    --pf-llm-text-idle: #6B7280;
+    --pf-text-idle: #9CA3AF;
+    --pf-text-active: #E5E7EB;
+    --pf-text-mcp: #D1D5DB;
+    --pf-llm-text-idle: #9CA3AF;
     --pf-llm-text-active: #BFDBFE;
     --pf-llm-text-completed: #93C5FD;
   }
