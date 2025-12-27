@@ -55,7 +55,7 @@ const SVG_HEIGHT = 200        // Reduced from 240 to remove bottom whitespace
 const SVG_WIDTH = 560
 const NODE_COUNT = 7
 const FLOW_WIDTH = GAP * (NODE_COUNT - 1) + NODE_SIZE
-const FLOW_START_X = (SVG_WIDTH - FLOW_WIDTH) / 2
+const FLOW_START_X = NODE_SIZE / 2  // Left-aligned with half-node margin
 
 const NODES = {
   input: { x: FLOW_START_X, y: ROW1_Y },
@@ -268,7 +268,7 @@ export function ProcessFlow({
   const nodeTop = (n: { y: number }) => n.y - NODE_SIZE / 2 - CONNECTOR_PAD
 
   return (
-    <div className="w-full px-4 sm:px-6">
+    <div className="w-full">
       <div className="w-full max-w-[700px]">
         <svg viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`} preserveAspectRatio="xMidYMin meet" className="w-full h-auto">
           <ArrowMarkers />
