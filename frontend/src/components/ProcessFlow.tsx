@@ -44,10 +44,10 @@ const GROUP_PAD = 8      // fix #7: consistent group box padding
 
 // Row Y positions (uniform 70px gaps)
 const ROW_GAP = 70
-const ROW1_Y = 28                  // nudged down for stroke headroom
-const ROW2_Y = ROW1_Y + ROW_GAP   // 98
-const ROW3_Y = ROW2_Y + ROW_GAP   // 168
-const BYPASS_Y = 8                 // safe positive Y, never clipped
+const ROW1_Y = 12                  // minimal top margin
+const ROW2_Y = ROW1_Y + ROW_GAP   // 82
+const ROW3_Y = ROW2_Y + ROW_GAP   // 152
+const BYPASS_Y = 2                 // minimal top clearance
 
 // Centering: flow occupies 75% evenly
 const SVG_WIDTH = 560
