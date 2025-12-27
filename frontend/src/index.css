@@ -147,6 +147,28 @@
     animation: pulseSoft 2s ease-in-out infinite;
   }
 
+  /* Button state colors */
+  .btn-amber {
+    @apply bg-amber-500 hover:bg-amber-600 text-white;
+  }
+
+  .btn-amber-outline {
+    @apply border border-amber-500 text-amber-500 hover:bg-amber-500/10 bg-transparent;
+  }
+
+  .btn-amber-pulse {
+    animation: buttonPulse 1.5s ease-in-out infinite;
+  }
+
+  .btn-green {
+    @apply bg-green-600 hover:bg-green-700 text-white;
+  }
+
+  @keyframes buttonPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+    50% { box-shadow: 0 0 15px 5px rgba(245, 158, 11, 0.4); }
+  }
+
   /* Staggered animations for cards */
   .stagger-1 { animation-delay: 0.1s; }
   .stagger-2 { animation-delay: 0.2s; }
