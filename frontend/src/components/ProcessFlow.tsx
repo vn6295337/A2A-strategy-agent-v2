@@ -48,10 +48,8 @@ const ROW_GAP = 68            // Slight reduction to tighten vertical flow
 const ROW1_Y = 32             // Pushes top row down so Group Box fits (32 - 30 = 2px from top)
 const ROW2_Y = ROW1_Y + ROW_GAP
 const ROW3_Y = ROW2_Y + ROW_GAP
-const BYPASS_Y = 5            // Above nodes for cache bypass elbow
-
 // SVG dimensions
-const SVG_HEIGHT = 220        // Height for 3-row layout with bypass line
+const SVG_HEIGHT = 220        // Height for 3-row layout
 const SVG_WIDTH = 560
 const NODE_COUNT = 7
 const FLOW_WIDTH = GAP * (NODE_COUNT - 1) + NODE_SIZE
@@ -140,18 +138,32 @@ function ArrowMarkers() {
   return (
     <defs>
       {['idle', 'executing', 'completed'].map((status) => (
-        <marker
-          key={status}
-          id={`arrow-${status}`}
-          markerWidth="5"
-          markerHeight="5"
-          refX="4"
-          refY="2.5"
-          orient="auto"
-          markerUnits="userSpaceOnUse"
-        >
-          <path d="M0,0 L0,5 L5,2.5 z" fill={`var(--pf-connector-${status})`} />
-        </marker>
+        <React.Fragment key={status}>
+          {/* Forward arrow (end) */}
+          <marker
+            id={`arrow-${status}`}
+            markerWidth="5"
+            markerHeight="5"
+            refX="4"
+            refY="2.5"
+            orient="auto"
+            markerUnits="userSpaceOnUse"
+          >
+            <path d="M0,0 L0,5 L5,2.5 z" fill={`var(--pf-connector-${status})`} />
+          </marker>
+          {/* Reverse arrow (start) for bidirectional */}
+          <marker
+            id={`arrow-start-${status}`}
+            markerWidth="5"
+            markerHeight="5"
+            refX="1"
+            refY="2.5"
+            orient="auto"
+            markerUnits="userSpaceOnUse"
+          >
+            <path d="M5,0 L5,5 L0,2.5 z" fill={`var(--pf-connector-${status})`} />
+          </marker>
+        </React.Fragment>
       ))}
     </defs>
   )
@@ -278,36 +290,92 @@ export function ProcessFlow({
           <rect {...LLM_GROUP} rx={8} fill="none" stroke="var(--pf-group-stroke)" strokeWidth={1} strokeDasharray="4 3" opacity={0.35} />
           <rect {...MCP_GROUP} rx={8} fill="none" stroke="var(--pf-group-stroke)" strokeWidth={1} strokeDasharray="4 3" opacity={0.35} />
 
-          {/* Connectors */}
+          {/* Row 1 Rightward Connectors */}
           <line x1={nodeRight(NODES.input)} y1={ROW1_Y} x2={nodeLeft(NODES.cache)} y2={ROW1_Y}
                 strokeWidth={1.4} markerEnd={`url(#arrow-${conn(inputStatus, cacheState === 'idle' ? 'idle' : 'completed')})`}
                 className={cn("pf-connector", `pf-connector-${conn(inputStatus, cacheState === 'idle' ? 'idle' : 'completed')}`)} />
-
           <line x1={nodeRight(NODES.cache)} y1={ROW1_Y} x2={nodeLeft(NODES.a2a)} y2={ROW1_Y}
                 strokeWidth={1.4} markerEnd={`url(#arrow-${cacheState === 'miss' ? conn('miss', a2aStatus) : 'idle'})`}
                 className={cn("pf-connector", `pf-connector-${cacheState === 'miss' ? conn('miss', a2aStatus) : 'idle'}`)} />
+          <line x1={nodeRight(NODES.a2a)} y1={ROW1_Y} x2={nodeLeft(NODES.analyzer)} y2={ROW1_Y}
+                strokeWidth={1.4} markerEnd={`url(#arrow-${conn(a2aStatus, analyzerStatus)})`}
+                className={cn("pf-connector", `pf-connector-${conn(a2aStatus, analyzerStatus)}`)} />
+          <line x1={nodeRight(NODES.analyzer)} y1={ROW1_Y} x2={nodeLeft(NODES.critic)} y2={ROW1_Y}
+                strokeWidth={1.4} markerEnd={`url(#arrow-${conn(analyzerStatus, criticStatus)})`}
+                className={cn("pf-connector", `pf-connector-${conn(analyzerStatus, criticStatus)}`)} />
+          <line x1={nodeRight(NODES.critic)} y1={ROW1_Y} x2={nodeLeft(NODES.editor)} y2={ROW1_Y}
+                strokeWidth={1.4} markerEnd={`url(#arrow-${conn(criticStatus, editorStatus)})`}
+                className={cn("pf-connector", `pf-connector-${conn(criticStatus, editorStatus)}`)} />
+          <line x1={nodeRight(NODES.editor)} y1={ROW1_Y} x2={nodeLeft(NODES.output)} y2={ROW1_Y}
+                strokeWidth={1.4} markerEnd={`url(#arrow-${conn(editorStatus, outputStatus)})`}
+                className={cn("pf-connector", `pf-connector-${conn(editorStatus, outputStatus)}`)} />
 
-          {/* Cache Bypass Elbow (cache hit path) */}
-          <path
-            d={`M ${NODES.cache.x} ${nodeTop(NODES.cache)} L ${NODES.cache.x} ${BYPASS_Y} L ${NODES.output.x} ${BYPASS_Y} L ${NODES.output.x} ${nodeTop(NODES.output)}`}
-            fill="none"
-            strokeWidth={1.4}
-            markerEnd={`url(#arrow-${cacheState === 'hit' ? 'completed' : 'idle'})`}
-            className={cn("pf-connector", cacheState === 'hit' ? "pf-connector-completed" : "pf-connector-idle")}
-            opacity={cacheState === 'hit' ? 1 : 0.3}
-          />
+          {/* Researcher to MCP block connector */}
+          <line x1={nodeRight(NODES.researcher)} y1={ROW3_Y} x2={MCP_GROUP.x - 2} y2={ROW3_Y}
+                strokeWidth={1.4} markerEnd={`url(#arrow-${researcherStatus === 'executing' || researcherStatus === 'completed' ? 'completed' : 'idle'})`}
+                className={cn("pf-connector", `pf-connector-${researcherStatus === 'executing' || researcherStatus === 'completed' ? 'completed' : 'idle'}`)} />
+
+          {/* Bidirectional Vertical Connectors */}
+          {/* User Input ↔ Exchange */}
+          <line x1={NODES.input.x} y1={nodeBottom(NODES.input)} x2={NODES.exchange.x} y2={nodeTop(NODES.exchange)}
+                strokeWidth={1.4}
+                markerStart={`url(#arrow-start-${conn(exchangeStatus, inputStatus)})`}
+                markerEnd={`url(#arrow-${conn(inputStatus, exchangeStatus)})`}
+                className={cn("pf-connector", `pf-connector-${inputStatus === 'completed' || exchangeStatus === 'completed' ? 'completed' : 'idle'}`)} />
+
+          {/* A2A ↔ Researcher */}
+          <line x1={NODES.a2a.x} y1={nodeBottom(NODES.a2a)} x2={NODES.researcher.x} y2={nodeTop(NODES.researcher)}
+                strokeWidth={1.4}
+                markerStart={`url(#arrow-start-${conn(researcherStatus, a2aStatus)})`}
+                markerEnd={`url(#arrow-${conn(a2aStatus, researcherStatus)})`}
+                className={cn("pf-connector", `pf-connector-${a2aStatus === 'completed' || researcherStatus === 'completed' ? 'completed' : a2aStatus === 'executing' || researcherStatus === 'executing' ? 'executing' : 'idle'}`)} />
+
+          {/* Agent Group ↔ LLM Group */}
+          <line x1={AGENTS_CENTER_X} y1={AGENTS_GROUP.y + AGENTS_GROUP.height + 2} x2={AGENTS_CENTER_X} y2={LLM_GROUP.y - 2}
+                strokeWidth={1.4}
+                markerStart={`url(#arrow-start-${analyzerStatus === 'executing' || criticStatus === 'executing' || editorStatus === 'executing' ? 'executing' : analyzerStatus === 'completed' ? 'completed' : 'idle'})`}
+                markerEnd={`url(#arrow-${analyzerStatus === 'executing' || criticStatus === 'executing' || editorStatus === 'executing' ? 'executing' : analyzerStatus === 'completed' ? 'completed' : 'idle'})`}
+                className={cn("pf-connector", `pf-connector-${analyzerStatus === 'executing' || criticStatus === 'executing' || editorStatus === 'executing' ? 'executing' : analyzerStatus === 'completed' ? 'completed' : 'idle'}`)} />
 
           {/* Nodes */}
-          <SVGNode x={NODES.input.x} y={NODES.input.y} icon={User} label="Input" status={inputStatus} />
-          <SVGNode x={NODES.cache.x} y={NODES.cache.y} icon={Database} label="Cache" status={cacheState === 'idle' ? 'idle' : 'completed'} isDiamond cacheState={cacheState} />
-          <SVGNode x={NODES.a2a.x} y={NODES.a2a.y} icon={Network} label="A2A" status={a2aStatus} />
+          <SVGNode x={NODES.input.x} y={NODES.input.y} icon={User} label="User Input" status={inputStatus} />
+          <SVGNode x={NODES.cache.x} y={NODES.cache.y} icon={Database} label="Check cache" status={cacheState === 'idle' ? 'idle' : 'completed'} isDiamond cacheState={cacheState} />
+          <SVGNode x={NODES.a2a.x} y={NODES.a2a.y} icon={Network} label="A2A client" status={a2aStatus} />
           <SVGNode x={NODES.analyzer.x} y={NODES.analyzer.y} icon={Brain} label="Analyzer" status={analyzerStatus} isAgent />
           <SVGNode x={NODES.critic.x} y={NODES.critic.y} icon={MessageSquare} label="Critic" status={criticStatus} isAgent />
           <SVGNode x={NODES.editor.x} y={NODES.editor.y} icon={Edit3} label="Editor" status={editorStatus} isAgent />
-          <SVGNode x={NODES.output.x} y={NODES.output.y} icon={FileOutput} label="Output" status={outputStatus} />
+          <SVGNode x={NODES.output.x} y={NODES.output.y} icon={FileOutput} label="SWOT Output" status={outputStatus} />
 
           <SVGNode x={NODES.exchange.x} y={NODES.exchange.y} icon={GitBranch} label="Exchange" status={exchangeStatus} />
-          <SVGNode x={NODES.researcher.x} y={NODES.researcher.y} icon={Search} label="Research" status={researcherStatus} isAgent />
+          <SVGNode x={NODES.researcher.x} y={NODES.researcher.y} icon={Search} label="Researcher" status={researcherStatus} isAgent />
+
+          {/* LLM Providers */}
+          {LLM_PROVIDERS.map((llm) => {
+            const isActive = analyzerStatus === 'executing' || criticStatus === 'executing' || editorStatus === 'executing';
+            const isCompleted = analyzerStatus === 'completed' && criticStatus === 'completed' && editorStatus === 'completed';
+            const status = isActive ? 'executing' : isCompleted ? 'completed' : 'idle';
+            return (
+              <g key={llm.id}>
+                <rect
+                  x={llm.x - LLM_WIDTH / 2}
+                  y={ROW2_Y - LLM_HEIGHT / 2}
+                  width={LLM_WIDTH}
+                  height={LLM_HEIGHT}
+                  rx={4}
+                  strokeWidth={1.5}
+                  className={cn("pf-llm", status === 'executing' ? 'pf-llm-executing pf-pulse' : status === 'completed' ? 'pf-llm-completed' : 'pf-llm-idle')}
+                />
+                <text
+                  x={llm.x}
+                  y={ROW2_Y + 4}
+                  textAnchor="middle"
+                  className={cn("text-[9px] font-medium", status === 'executing' ? 'pf-llm-text-executing' : status === 'completed' ? 'pf-llm-text-completed' : 'pf-llm-text-idle')}
+                >
+                  {llm.name}
+                </text>
+              </g>
+            )
+          })}
 
           {/* MCP Servers */}
           {MCP_SERVERS.map((mcp) => {
