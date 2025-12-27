@@ -486,7 +486,6 @@ export function ProcessFlow({
           viewBox="0 0 560 240"
           preserveAspectRatio="xMidYMin meet"
           className="w-full max-w-[700px]"
-          style={{ minHeight: '240px' }}
         >
           <ArrowMarkers />
 
