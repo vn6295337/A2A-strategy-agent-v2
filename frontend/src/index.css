@@ -302,10 +302,15 @@
   opacity: 0.6;
 }
 
-/* A.1 - Tier-1 agents get stronger visual weight */
+/* Agents - thin border same as MCP servers */
 .pf-agent {
-  stroke-width: 2.5;
-  rx: 6;
+  stroke-width: 1;
+}
+
+/* No border for non-agent nodes */
+.pf-no-border {
+  stroke: none !important;
+  stroke-width: 0 !important;
 }
 
 /* Agent executing state with drop-shadow for sophistication */
@@ -403,17 +408,17 @@
 
 .pf-llm-idle {
   fill: var(--pf-llm-idle-fill);
-  stroke: var(--pf-llm-idle-stroke);
+  stroke: none;
 }
 
 .pf-llm-executing {
   fill: var(--pf-llm-active-fill);
-  stroke: var(--pf-llm-active-stroke);
+  stroke: none;
 }
 
 .pf-llm-completed {
   fill: var(--pf-llm-completed-fill);
-  stroke: var(--pf-llm-completed-stroke);
+  stroke: none;
 }
 
 /* Group box styles */

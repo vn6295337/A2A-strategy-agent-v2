@@ -51,7 +51,7 @@ const GROUP_PAD = 4
 
 // ADJUSTED VALUES FOR TIGHT FIT
 const ROW_GAP = 68            // Slight reduction to tighten vertical flow
-const ROW1_Y = 32             // Pushes top row down so Group Box fits (32 - 30 = 2px from top)
+const ROW1_Y = 48             // Increased for labels above containers
 const ROW2_Y = ROW1_Y + ROW_GAP
 const ROW3_Y = ROW2_Y + ROW_GAP
 // SVG dimensions
@@ -180,23 +180,34 @@ function SVGNode({
   y,
   icon: Icon,
   label,
+  label2,
   status,
   isDiamond = false,
   cacheState,
   isAgent = false,
+  hasBorder = true,
+  labelPosition = 'below',
 }: {
   x: number
   y: number
   icon: React.ElementType
   label: string
+  label2?: string
   status: NodeStatus
   isDiamond?: boolean
   cacheState?: CacheState
   isAgent?: boolean
+  hasBorder?: boolean
+  labelPosition?: 'above' | 'below'
 }) {
   const isExecuting = status === 'executing' || cacheState === 'checking'
   const opacity = status === 'idle' && !cacheState ? 0.7 : status === 'skipped' ? 0.7 : 1
-  const strokeWidth = isAgent ? 1.5 : 1
+  const strokeWidth = hasBorder ? 1 : 0
+
+  // Label positioning
+  const labelY = labelPosition === 'above'
+    ? y - NODE_SIZE / 2 - (label2 ? 16 : 8)
+    : y + NODE_SIZE / 2 + 10
 
   return (
     <g opacity={opacity} className="transition-opacity duration-300">
@@ -211,6 +222,7 @@ function SVGNode({
           "pf-node",
           cacheState ? `pf-cache-${cacheState}` : `pf-node-${status}`,
           isAgent && "pf-agent",
+          !hasBorder && "pf-no-border",
           isExecuting && "pf-pulse"
         )}
         transform={isDiamond ? `rotate(45 ${x} ${y})` : undefined}
@@ -231,11 +243,14 @@ function SVGNode({
       </foreignObject>
       <text
         x={x}
-        y={y + NODE_SIZE / 2 + 10}
+        y={labelY}
         textAnchor="middle"
         className="text-[8px] font-medium pf-text-label"
       >
         {label}
+        {label2 && (
+          <tspan x={x} dy="9">{label2}</tspan>
+        )}
       </text>
     </g>
   )
@@ -358,19 +373,20 @@ export function ProcessFlow({
                 markerEnd={`url(#arrow-${analyzerStatus === 'executing' || criticStatus === 'executing' || editorStatus === 'executing' ? 'executing' : analyzerStatus === 'completed' ? 'completed' : 'idle'})`}
                 className={cn("pf-connector pf-orchestration", `pf-connector-${analyzerStatus === 'executing' || criticStatus === 'executing' || editorStatus === 'executing' ? 'executing' : analyzerStatus === 'completed' ? 'completed' : 'idle'}`)} />
 
-          {/* Nodes */}
-          <SVGNode x={NODES.input.x} y={NODES.input.y} icon={User} label="User Input" status={inputStatus} />
-          <SVGNode x={NODES.cache.x} y={NODES.cache.y} icon={Database} label="Cache" status={cacheState === 'idle' ? 'idle' : 'completed'} isDiamond cacheState={cacheState} />
-          <SVGNode x={NODES.a2a.x} y={NODES.a2a.y} icon={Network} label="A2A client" status={a2aStatus} />
-          <SVGNode x={NODES.analyzer.x} y={NODES.analyzer.y} icon={Brain} label="Analyzer" status={analyzerStatus} isAgent />
-          <SVGNode x={NODES.critic.x} y={NODES.critic.y} icon={MessageSquare} label="Critic" status={criticStatus} isAgent />
-          <SVGNode x={NODES.editor.x} y={NODES.editor.y} icon={Edit3} label="Editor" status={editorStatus} isAgent />
-          <SVGNode x={NODES.output.x} y={NODES.output.y} icon={FileOutput} label="Output" status={outputStatus} />
+          {/* Row 1 Nodes - labels above */}
+          <SVGNode x={NODES.input.x} y={NODES.input.y} icon={User} label="User Input" status={inputStatus} hasBorder={false} labelPosition="above" />
+          <SVGNode x={NODES.cache.x} y={NODES.cache.y} icon={Database} label="Cache" status={cacheState === 'idle' ? 'idle' : 'completed'} isDiamond cacheState={cacheState} hasBorder={false} labelPosition="above" />
+          <SVGNode x={NODES.a2a.x} y={NODES.a2a.y} icon={Network} label="A2A client" status={a2aStatus} hasBorder={false} labelPosition="above" />
+          <SVGNode x={NODES.analyzer.x} y={NODES.analyzer.y} icon={Brain} label="Analyzer" label2="Agent" status={analyzerStatus} isAgent labelPosition="above" />
+          <SVGNode x={NODES.critic.x} y={NODES.critic.y} icon={MessageSquare} label="Critic" label2="Agent" status={criticStatus} isAgent labelPosition="above" />
+          <SVGNode x={NODES.editor.x} y={NODES.editor.y} icon={Edit3} label="Editor" label2="Agent" status={editorStatus} isAgent labelPosition="above" />
+          <SVGNode x={NODES.output.x} y={NODES.output.y} icon={FileOutput} label="Output" status={outputStatus} hasBorder={false} labelPosition="above" />
 
-          <SVGNode x={NODES.exchange.x} y={NODES.exchange.y} icon={GitBranch} label="Exchange" status={exchangeStatus} />
-          <SVGNode x={NODES.researcher.x} y={NODES.researcher.y} icon={Search} label="Researcher" status={researcherStatus} isAgent />
+          {/* Row 2 & 3 Nodes - labels below */}
+          <SVGNode x={NODES.exchange.x} y={NODES.exchange.y} icon={GitBranch} label="Exchange" label2="Database" status={exchangeStatus} hasBorder={false} />
+          <SVGNode x={NODES.researcher.x} y={NODES.researcher.y} icon={Search} label="Researcher" label2="Agent" status={researcherStatus} isAgent />
 
-          {/* LLM Providers */}
+          {/* LLM Providers - no borders */}
           {LLM_PROVIDERS.map((llm) => {
             const isActive = analyzerStatus === 'executing' || criticStatus === 'executing' || editorStatus === 'executing';
             const isCompleted = analyzerStatus === 'completed' && criticStatus === 'completed' && editorStatus === 'completed';
@@ -383,14 +399,13 @@ export function ProcessFlow({
                   width={LLM_WIDTH}
                   height={LLM_HEIGHT}
                   rx={4}
-                  strokeWidth={1}
-                  className={cn("pf-llm", status === 'executing' ? 'pf-llm-executing' : status === 'completed' ? 'pf-llm-completed' : 'pf-llm-idle')}
+                  className="pf-llm pf-llm-idle"
                 />
                 <text
                   x={llm.x}
                   y={ROW2_Y + 4}
                   textAnchor="middle"
-                  className={cn("text-[9px] font-medium", status === 'executing' ? 'pf-llm-text-executing' : status === 'completed' ? 'pf-llm-text-completed' : 'pf-llm-text-idle')}
+                  className="text-[9px] font-medium pf-llm-text-idle"
                 >
                   {llm.name}
                 </text>
