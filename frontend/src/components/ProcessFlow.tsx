@@ -42,7 +42,7 @@ const NODE_SIZE = 44
 const ICON_SIZE = 24
 const MCP_SIZE = 36
 const MCP_ICON_SIZE = 20
-const LLM_WIDTH = 52
+const LLM_WIDTH = 64
 const LLM_HEIGHT = 24
 
 const GAP = 72
@@ -74,7 +74,7 @@ const NODES = {
 }
 
 const MCP_START_X = NODES.researcher.x + NODE_SIZE / 2 + 40
-const MCP_GAP = 50
+const MCP_GAP = 38
 const MCP_SERVERS = [
   { id: 'financials', label: 'Financials', icon: TrendingUp, x: MCP_START_X },
   { id: 'valuation', label: 'Valuation', icon: DollarSign, x: MCP_START_X + MCP_GAP },
@@ -143,7 +143,7 @@ function getNodeStatus(
 function ArrowMarkers() {
   return (
     <defs>
-      {['idle', 'executing', 'completed'].map((status) => (
+      {['idle', 'executing', 'completed', 'failed'].map((status) => (
         <React.Fragment key={status}>
           {/* Forward arrow (end) */}
           <marker
@@ -187,6 +187,7 @@ function SVGNode({
   isAgent = false,
   hasBorder = true,
   labelPosition = 'below',
+  flipIcon = false,
 }: {
   x: number
   y: number
@@ -199,6 +200,7 @@ function SVGNode({
   isAgent?: boolean
   hasBorder?: boolean
   labelPosition?: 'above' | 'below'
+  flipIcon?: boolean
 }) {
   const isExecuting = status === 'executing' || cacheState === 'checking'
   const opacity = status === 'idle' && !cacheState ? 0.7 : status === 'skipped' ? 0.7 : 1
@@ -237,7 +239,7 @@ function SVGNode({
           {isExecuting ? (
             <Loader2 className="w-5 h-5 pf-icon animate-spin" />
           ) : (
-            <Icon className="w-5 h-5 pf-icon" />
+            <Icon className="w-5 h-5 pf-icon" style={flipIcon ? { transform: 'scaleX(-1)' } : undefined} />
           )}
         </div>
       </foreignObject>
@@ -306,6 +308,9 @@ export function ProcessFlow({
   const nodeLeft = (n: { x: number }) => n.x - NODE_SIZE / 2 - CONNECTOR_PAD
   const nodeBottom = (n: { y: number }) => n.y + NODE_SIZE / 2 + CONNECTOR_PAD
   const nodeTop = (n: { y: number }) => n.y - NODE_SIZE / 2 - CONNECTOR_PAD
+  // Diamond corners (rotated 45°, half-diagonal = NODE_SIZE * sqrt(2) / 2)
+  const diamondLeft = (n: { x: number }) => n.x - NODE_SIZE * Math.sqrt(2) / 2 - CONNECTOR_PAD
+  const diamondRight = (n: { x: number }) => n.x + NODE_SIZE * Math.sqrt(2) / 2 + CONNECTOR_PAD
 
   return (
     <div className="w-full">
@@ -331,10 +336,10 @@ export function ProcessFlow({
           )}
 
           {/* Row 1 Rightward Connectors */}
-          <line x1={nodeRight(NODES.input)} y1={ROW1_Y} x2={nodeLeft(NODES.cache)} y2={ROW1_Y}
+          <line x1={nodeRight(NODES.input)} y1={ROW1_Y} x2={diamondLeft(NODES.cache)} y2={ROW1_Y}
                 strokeWidth={1.4} markerEnd={`url(#arrow-${conn(inputStatus, cacheState === 'idle' ? 'idle' : 'completed')})`}
                 className={cn("pf-connector", `pf-connector-${conn(inputStatus, cacheState === 'idle' ? 'idle' : 'completed')}`)} />
-          <line x1={nodeRight(NODES.cache)} y1={ROW1_Y} x2={nodeLeft(NODES.a2a)} y2={ROW1_Y}
+          <line x1={diamondRight(NODES.cache)} y1={ROW1_Y} x2={nodeLeft(NODES.a2a)} y2={ROW1_Y}
                 strokeWidth={1.4} markerEnd={`url(#arrow-${cacheState === 'miss' ? conn('miss', a2aStatus) : 'idle'})`}
                 className={cn("pf-connector", `pf-connector-${cacheState === 'miss' ? conn('miss', a2aStatus) : 'idle'}`)} />
           <line x1={nodeRight(NODES.a2a)} y1={ROW1_Y} x2={nodeLeft(NODES.analyzer)} y2={ROW1_Y}
@@ -385,7 +390,7 @@ export function ProcessFlow({
           <SVGNode x={NODES.analyzer.x} y={NODES.analyzer.y} icon={Brain} label="Analyzer" label2="Agent" status={analyzerStatus} isAgent labelPosition="above" />
           <SVGNode x={NODES.critic.x} y={NODES.critic.y} icon={MessageSquare} label="Critic" label2="Agent" status={criticStatus} isAgent labelPosition="above" />
           <SVGNode x={NODES.editor.x} y={NODES.editor.y} icon={Edit3} label="Editor" label2="Agent" status={editorStatus} isAgent labelPosition="above" />
-          <SVGNode x={NODES.output.x} y={NODES.output.y} icon={FileOutput} label="Output" status={outputStatus} hasBorder={false} labelPosition="above" />
+          <SVGNode x={NODES.output.x} y={NODES.output.y} icon={FileOutput} label="Output" status={outputStatus} hasBorder={false} labelPosition="above" flipIcon />
 
           {/* Row 2 & 3 Nodes - labels below */}
           <SVGNode x={NODES.exchange.x} y={NODES.exchange.y} icon={GitBranch} label="Exchange" label2="Database" status={exchangeStatus} hasBorder={false} />

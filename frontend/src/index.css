@@ -63,17 +63,17 @@
     --pf-idle-fill: #000000;
     --pf-idle-stroke: #6B7280;
     --pf-executing-fill: #000000;
-    --pf-executing-stroke: #34D399;
+    --pf-executing-stroke: #F59E0B;
     --pf-completed-fill: #000000;
     --pf-completed-stroke: #10B981;
     --pf-failed-fill: #000000;
-    --pf-failed-stroke: #F87171;
+    --pf-failed-stroke: #EF4444;
 
     /* Cache states */
     --pf-cache-hit-fill: #000000;
     --pf-cache-hit-stroke: #10B981;
     --pf-cache-miss-fill: #000000;
-    --pf-cache-miss-stroke: #FBBF24;
+    --pf-cache-miss-stroke: #EF4444;
 
     /* LLM providers */
     --pf-llm-idle-fill: #000000;
@@ -83,10 +83,11 @@
     --pf-llm-completed-fill: #000000;
     --pf-llm-completed-stroke: #2563EB;
 
-    /* Connector colors - unchanged */
+    /* Connector colors */
     --pf-connector-idle: #4B5563;
-    --pf-connector-executing: #34D399;
+    --pf-connector-executing: #F59E0B;
     --pf-connector-completed: #10B981;
+    --pf-connector-failed: #EF4444;
 
     /* Group box - unchanged */
     --pf-group-fill: rgba(31, 41, 55, 0.3);
@@ -345,10 +346,15 @@
 
 .pf-connector-executing {
   stroke: var(--pf-connector-executing);
+  animation: pfPulse 1.5s ease-in-out infinite;
 }
 
 .pf-connector-completed {
   stroke: var(--pf-connector-completed);
+}
+
+.pf-connector-failed {
+  stroke: var(--pf-connector-failed);
 }
 
 /* Orchestration connector - coordinated reasoning signal */
