@@ -384,19 +384,19 @@ export function ProcessFlow({
                 className={cn("pf-connector pf-orchestration", `pf-connector-${analyzerStatus === 'executing' || criticStatus === 'executing' || editorStatus === 'executing' ? 'executing' : analyzerStatus === 'completed' ? 'completed' : 'idle'}`)} />
 
           {/* Row 1 Nodes - labels above */}
-          <SVGNode x={NODES.input.x} y={NODES.input.y} icon={User} label="User Input" status={inputStatus} hasBorder={false} labelPosition="above" />
-          <SVGNode x={NODES.cache.x} y={NODES.cache.y} icon={Database} label="Cache" status={cacheState === 'idle' ? 'idle' : 'completed'} isDiamond cacheState={cacheState} hasBorder={false} labelPosition="above" />
-          <SVGNode x={NODES.a2a.x} y={NODES.a2a.y} icon={Network} label="A2A client" status={a2aStatus} hasBorder={false} labelPosition="above" />
+          <SVGNode x={NODES.input.x} y={NODES.input.y} icon={User} label="User Input" status={inputStatus} labelPosition="above" />
+          <SVGNode x={NODES.cache.x} y={NODES.cache.y} icon={Database} label="Cache" status={cacheState === 'idle' ? 'idle' : 'completed'} isDiamond cacheState={cacheState} labelPosition="above" />
+          <SVGNode x={NODES.a2a.x} y={NODES.a2a.y} icon={Network} label="A2A client" status={a2aStatus} labelPosition="above" />
           <SVGNode x={NODES.analyzer.x} y={NODES.analyzer.y} icon={Brain} label="Analyzer" label2="Agent" status={analyzerStatus} isAgent labelPosition="above" />
           <SVGNode x={NODES.critic.x} y={NODES.critic.y} icon={MessageSquare} label="Critic" label2="Agent" status={criticStatus} isAgent labelPosition="above" />
           <SVGNode x={NODES.editor.x} y={NODES.editor.y} icon={Edit3} label="Editor" label2="Agent" status={editorStatus} isAgent labelPosition="above" />
-          <SVGNode x={NODES.output.x} y={NODES.output.y} icon={FileOutput} label="Output" status={outputStatus} hasBorder={false} labelPosition="above" flipIcon />
+          <SVGNode x={NODES.output.x} y={NODES.output.y} icon={FileOutput} label="Output" status={outputStatus} labelPosition="above" flipIcon />
 
           {/* Row 2 & 3 Nodes - labels below */}
-          <SVGNode x={NODES.exchange.x} y={NODES.exchange.y} icon={GitBranch} label="Exchange" label2="Database" status={exchangeStatus} hasBorder={false} />
+          <SVGNode x={NODES.exchange.x} y={NODES.exchange.y} icon={GitBranch} label="Exchange" label2="Database" status={exchangeStatus} />
           <SVGNode x={NODES.researcher.x} y={NODES.researcher.y} icon={Search} label="Researcher" label2="Agent" status={researcherStatus} isAgent />
 
-          {/* LLM Providers - no borders */}
+          {/* LLM Providers - with borders */}
           {LLM_PROVIDERS.map((llm) => {
             const isActive = analyzerStatus === 'executing' || criticStatus === 'executing' || editorStatus === 'executing';
             const isCompleted = analyzerStatus === 'completed' && criticStatus === 'completed' && editorStatus === 'completed';
@@ -409,13 +409,14 @@ export function ProcessFlow({
                   width={LLM_WIDTH}
                   height={LLM_HEIGHT}
                   rx={4}
-                  className="pf-llm pf-llm-idle"
+                  strokeWidth={1}
+                  className={cn("pf-llm", `pf-llm-${status}`, status === 'executing' && "pf-pulse")}
                 />
                 <text
                   x={llm.x}
                   y={ROW2_Y + 4}
                   textAnchor="middle"
-                  className="text-[9px] font-medium pf-llm-text-idle"
+                  className={`text-[9px] font-medium pf-llm-text-${status}`}
                 >
                   {llm.name}
                 </text>

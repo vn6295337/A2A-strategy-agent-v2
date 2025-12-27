@@ -441,17 +441,17 @@
 
 .pf-llm-idle {
   fill: var(--pf-llm-idle-fill);
-  stroke: none;
+  stroke: var(--pf-idle-stroke);
 }
 
 .pf-llm-executing {
   fill: var(--pf-llm-active-fill);
-  stroke: none;
+  stroke: var(--pf-executing-stroke);
 }
 
 .pf-llm-completed {
   fill: var(--pf-llm-completed-fill);
-  stroke: none;
+  stroke: var(--pf-completed-stroke);
 }
 
 /* Group box styles */
