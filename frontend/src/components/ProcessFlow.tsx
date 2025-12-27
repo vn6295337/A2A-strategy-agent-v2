@@ -48,10 +48,10 @@ const ROW_GAP = 68            // Slight reduction to tighten vertical flow
 const ROW1_Y = 32             // Pushes top row down so Group Box fits (32 - 30 = 2px from top)
 const ROW2_Y = ROW1_Y + ROW_GAP
 const ROW3_Y = ROW2_Y + ROW_GAP
-const BYPASS_Y = 10           // Safe margin for bypass line
+const BYPASS_Y = 5            // Above nodes for cache bypass elbow
 
 // SVG dimensions
-const SVG_HEIGHT = 200        // Reduced from 240 to remove bottom whitespace
+const SVG_HEIGHT = 220        // Height for 3-row layout with bypass line
 const SVG_WIDTH = 560
 const NODE_COUNT = 7
 const FLOW_WIDTH = GAP * (NODE_COUNT - 1) + NODE_SIZE
@@ -286,6 +286,16 @@ export function ProcessFlow({
           <line x1={nodeRight(NODES.cache)} y1={ROW1_Y} x2={nodeLeft(NODES.a2a)} y2={ROW1_Y}
                 strokeWidth={1.4} markerEnd={`url(#arrow-${cacheState === 'miss' ? conn('miss', a2aStatus) : 'idle'})`}
                 className={cn("pf-connector", `pf-connector-${cacheState === 'miss' ? conn('miss', a2aStatus) : 'idle'}`)} />
+
+          {/* Cache Bypass Elbow (cache hit path) */}
+          <path
+            d={`M ${NODES.cache.x} ${nodeTop(NODES.cache)} L ${NODES.cache.x} ${BYPASS_Y} L ${NODES.output.x} ${BYPASS_Y} L ${NODES.output.x} ${nodeTop(NODES.output)}`}
+            fill="none"
+            strokeWidth={1.4}
+            markerEnd={`url(#arrow-${cacheState === 'hit' ? 'completed' : 'idle'})`}
+            className={cn("pf-connector", cacheState === 'hit' ? "pf-connector-completed" : "pf-connector-idle")}
+            opacity={cacheState === 'hit' ? 1 : 0.3}
+          />
 
           {/* Nodes */}
           <SVGNode x={NODES.input.x} y={NODES.input.y} icon={User} label="Input" status={inputStatus} />
